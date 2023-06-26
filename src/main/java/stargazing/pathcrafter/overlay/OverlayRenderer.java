@@ -18,6 +18,7 @@ import java.util.Objects;
 
 
 public class OverlayRenderer implements HudRenderCallback {
+    // Very much don't know what to do here
 
     private VertexConsumer vertexUploader;
 
