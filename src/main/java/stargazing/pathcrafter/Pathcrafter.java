@@ -11,8 +11,12 @@ import net.minecraft.world.chunk.Chunk;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import stargazing.pathcrafter.structures.Terrain;
+import stargazing.pathcrafter.structures.Vertex;
 import stargazing.pathcrafter.util.Preprocessing;
 import stargazing.pathcrafter.util.World;
+
+import java.util.ArrayList;
 
 import static stargazing.pathcrafter.util.Preprocessing.processChunk;
 
@@ -41,8 +45,11 @@ public class Pathcrafter implements ClientModInitializer {
                 }
                 pressed = true;
                 assert client.player != null;
-                Chunk c = World.getChunk(0,0);
-                Preprocessing.processChunk(c, client);
+                Terrain t = new Terrain(0, 0, 15, 15);
+                ArrayList<Vertex> vertices = t.findVerticesAt(0, 0);
+                for (Vertex v : vertices) {
+                    Pathcrafter.LOGGER.info(String.format("%s", v));
+                }
                 client.player.sendMessage(Text.literal("Debug Button Pressed"), false);
             }
             else {

@@ -2,8 +2,13 @@ package stargazing.pathcrafter;
 
 public class Constants {
 
+    // Debug printing toggle
+    public static final boolean BLOCK_COLUMN_DEBUG_INFO = false;
+    public static final boolean TERRAIN_DEBUG_INFO = true;
+
     // Player related constants
     public static final double PLAYER_HEIGHT = 1.8;
+    public static final double PLAYER_WIDTH_MARGIN = 0.002;
     public static final double PLAYER_WIDTH = 0.6;
     public static final double PLAYER_HALF_WIDTH = 0.3; // Arguably more useful
 
@@ -21,6 +26,7 @@ public class Constants {
 
     // It takes 12gt to land at the same y-level after jumping.
     public static final int FLAT_JUMP_TICKS = 12;
+    public static final int ELEVATE_JUMP_TICKS = 8;
     public static final double FLAT_MAX_MOMENTUM = 0.3176;
 
     public static final double GRAVITY_MODIFIER = 0.08;
@@ -30,5 +36,9 @@ public class Constants {
     public static final double SPRINT_FACTOR = 1.3;
     public static final double STRAIGHT_FACTOR = 0.98; // 45-Strafe --> 1.0
     public static final double SPRINT_JUMP_MODIFIER = 0.2;
+
+    // Options, will implement something later
+    public static final int MAX_SEARCH_RANGE = 50;
+    public static final double SEARCH_RANGE_FACTOR = 0.7;
 
 }

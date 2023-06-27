@@ -26,7 +26,7 @@ Very early alpha. The following features have yet to be implemented:
 - Other collision boxes
 - Advanced jumping
    - air critical points, for threading between hitboxes
-   - Rerouting to take a jump
+   - Rerouting to take a (faster) jump across a corner / an edge
 - Regular blipping (Blips ups are patched 1.14.4)
 - Head hitting v2 (partial blocks)
 - Ladders
