@@ -41,13 +41,18 @@ public class Preprocessing {
                 int z = (i/CHUNK_SIZE)%CHUNK_SIZE;
                 int y = i/CHUNK_SIZE/CHUNK_SIZE;
                 BlockState bs = cs.getBlockState(x, y, z);
-                // Ignore air blocks
-                if (bs.getMaterial() == Material.AIR) {
+                // Ignore water and lava blocks for now
+                if (bs.getMaterial() == Material.WATER || bs.getMaterial() == Material.LAVA) {
                     continue;
                 }
 
                 // Get the shape of the block
                 VoxelShape collisionShape = bs.getCollisionShape(client.world, new BlockPos(x, y+subchunkY, z));
+
+                // Ignore blocks without collision
+                if (collisionShape.isEmpty()) {
+                    continue;
+                }
 
                 columns[x][z].addBlock(collisionShape, y+subchunkY);
             }
