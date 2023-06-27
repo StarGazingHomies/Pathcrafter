@@ -11,11 +11,14 @@ vertices and edges are heavily modified to _resemble_ a Navmesh.
 By doing so, movement can occur between partial blocks and will
 heavily reduce the travel time of the planned path.
 
-Note that this mod carries a heavy performance penalty.
-
-This mod is not aimed at botting. It is meant to be a tool for 
-navigating survival worlds without elytra or for 
+Note that this mod carries a heavy performance penalty over 
+alternatives. The mod is not aimed at botting. It is meant 
+to be a tool for general navigation without elytra or for 
 set seed speedrunners.
+
+The following have been implemented:
+
+Nothing. What, I literally *just* made it.
 
 Very early alpha. The following features have yet to be implemented:
 
@@ -26,27 +29,24 @@ Very early alpha. The following features have yet to be implemented:
 - Other collision boxes
 - Advanced jumping
    - air critical points, for threading between hitboxes
-   - Rerouting to take a jump
+   - Rerouting to take a (faster) jump across a corner / an edge
 - Regular blipping (Blips ups are patched 1.14.4)
+- Clean up for v1.0.0
 - Head hitting v2 (partial blocks)
-- Ladders
-- Water
+- Ladders, Water & MLG option
+- Swimming
 - Damage avoidance
 - Momentum handling
 - Slime bounces
 - Falling blocks (flat cost)
 - Caching & Path segmentation
-- Food
+- Food calculations
 - World state management (block placing, etc.)
-- Ice & ice boating (no idea how to do this yet)
+- Slipperiness & ice boating
 - Basic redstone solving (one could wish)
 - Shadowmap Integration (when Shadowmap releases)
 
-The following have been implemented:
-
-Nothing. What, I literally *just* made it.
-
-The following is outside the scope of the mod. If you want to see
+The following is outside the scope of the mod. If you want to make
 a feature listed here, ask for permission and implement it yourself.
 
 - Mob avoidance
