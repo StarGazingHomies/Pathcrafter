@@ -14,8 +14,8 @@ import static stargazing.pathcrafter.Constants.*;
 public class PlayerSpeed {
 
     public static class JumpData {
-        int ticksElapsed;
-        double minY, maxY, deltaX;
+        public int ticksElapsed;
+        public double minY, maxY, deltaX;
 
         JumpData(int tick, double minY, double maxY, double deltaX) {
             this.ticksElapsed = tick;
@@ -28,12 +28,52 @@ public class PlayerSpeed {
     public static final int JUMP_DATA_START_TICK = 7;
     public static final ArrayList<JumpData> flatJumpDistances = new ArrayList<>();
 
+    public static void initializeFreeFallData() {
+
+    }
+
+    /*
+     For ticksToFallTo(double y).
+     This one uses something kinda different.
+     The base y velocity formula is:
+     velY_(i+1) = (velY_i - GRAVITY_MODIFIER) * VERTICAL_DRAG;
+     However, we can simplify into a geometric sequence + a constant
+     (velY_(i+1) + k) = VERTICAL_DRAG * (velY_i + k) for some k.
+     This k is equal to VERTICAL_DRAG * GRAVITY_MODIFIER / (1 - VERTICAL_DRAG)
+     Let y'_i = y_i + k
+    */
+    static final double k = VERTICAL_DRAG * GRAVITY_MODIFIER / (1 - VERTICAL_DRAG);
+
+    public static int ticksToFallTo(double y) {
+        // Since it's free fall, initial y' is just k.
+        // double y'_0 = k; (not necessary, we'll just use k directly)
+
+        // pos_j = sum( i from 1 to j : y_i )
+        // therefore pos_j = sum( i from 1 to j : y'_i ) - j * k;
+        // Using geometric seq. sum, pos_j = kd(1-d^j) / (1-d) - j * k
+        // Now we're solving for the first j such that pos_j < y
+        // Could binary search for a log(n) solution... but could we just use newton's method a few times?
+
+
+
+        // OR, since I'm too lazy, just...
+
+        double pos = 0, vy = 0;
+        int t = 0;
+        while (y < pos) {
+            vy = (vy - GRAVITY_MODIFIER) * VERTICAL_DRAG;
+            pos += vy;
+            t++;
+        }
+        return t;
+    }
+
     public static void initializeJumpData(double momentumX, boolean Strafe45) {
         // Initial state
         // Assume 0 momentum for now.
         int tick = 0;
         double posX = 0.0, posY = 0.0;
-        double velX = momentumX, velY = 0.0, lastY;
+        double velX = momentumX, velY = 0.0, lastY=0.0;
 
         // Jump (tick 1)
         tick = 1;
@@ -43,8 +83,12 @@ public class PlayerSpeed {
                 HORIZONTAL_ACCELERATION_GROUND * SPRINT_FACTOR * (Strafe45?1.0:STRAIGHT_FACTOR) +
                 SPRINT_JUMP_MODIFIER;
         posX += velX;
+        flatJumpDistances.add(
+                new JumpData(
+                        tick, posY, lastY, posX
+                )
+        );
 
-        // Start storing from tick 7 as the player starts falling down.
         tick = 2;
         for (;posY>-320;tick++) {
             velY = (velY - GRAVITY_MODIFIER) * VERTICAL_DRAG;
