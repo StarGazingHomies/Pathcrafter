@@ -406,6 +406,11 @@ public class Terrain {
             if (edgeResult < 0) continue;
 
             // Debug
+            if (graph.getVertex(j).y > 15) {
+                // Strange occurence. has to debug
+                Pathcrafter.LOGGER.info(String.format("Edge from %d (%s) to %d (%s)-> %f",
+                        i, graph.getVertex(i), j, graph.getVertex(j), edgeResult));
+            }
             if (TERRAIN_EDGE_LIST_EDGES)
                 Pathcrafter.LOGGER.info(String.format("Edge from %d (%s) to %d (%s)-> %f",
                         i, graph.getVertex(i), j, graph.getVertex(j), edgeResult));
@@ -448,20 +453,20 @@ public class Terrain {
         // Find all relevant columns
         Set<BlockColumn> relevantColumns = new HashSet<BlockColumn>();
         Set<BlockColumn> centralColumns = getColumns(
-                start.x - PLAYER_HALF_WIDTH * x_dir,
-                start.z - PLAYER_HALF_WIDTH * z_dir,
-                end.x + PLAYER_HALF_WIDTH * x_dir,
-                end.z + PLAYER_HALF_WIDTH * z_dir);
+                start.x - PLAYER_HALF_WIDTH_PADDED * x_dir,
+                start.z - PLAYER_HALF_WIDTH_PADDED * z_dir,
+                end.x   + PLAYER_HALF_WIDTH_PADDED * x_dir,
+                end.z   + PLAYER_HALF_WIDTH_PADDED * z_dir);
         Set<BlockColumn> upperColumns = getColumns(
-                start.x - PLAYER_HALF_WIDTH * x_dir,
-                start.z + PLAYER_HALF_WIDTH * z_dir,
-                end.x - PLAYER_HALF_WIDTH * x_dir,
-                end.z + PLAYER_HALF_WIDTH * z_dir);
+                start.x - PLAYER_HALF_WIDTH_PADDED * x_dir,
+                start.z + PLAYER_HALF_WIDTH_PADDED * z_dir,
+                end.x   - PLAYER_HALF_WIDTH_PADDED * x_dir,
+                end.z   + PLAYER_HALF_WIDTH_PADDED * z_dir);
         Set<BlockColumn> lowerColumns = getColumns(
-                start.x + PLAYER_HALF_WIDTH * x_dir,
-                start.z - PLAYER_HALF_WIDTH * z_dir,
-                end.x + PLAYER_HALF_WIDTH * x_dir,
-                end.z - PLAYER_HALF_WIDTH * z_dir);
+                start.x + PLAYER_HALF_WIDTH_PADDED * x_dir,
+                start.z - PLAYER_HALF_WIDTH_PADDED * z_dir,
+                end.x   + PLAYER_HALF_WIDTH_PADDED * x_dir,
+                end.z   - PLAYER_HALF_WIDTH_PADDED * z_dir);
         if (centralColumns == null || upperColumns == null || lowerColumns == null) {
             // Congrats, you hit the edge of the loaded area!
             // The weights can't be calculated, so... have a -1!
@@ -519,8 +524,6 @@ public class Terrain {
         int startIndex = -1;
 
         for (ColumnEvent ce : columnEvents) {
-            // Anything else doesn't impact it anymore.
-            if (ce.time >= 1) break;
 
             //Pathcrafter.LOGGER.info(String.format("Time %f", ce.time));
             for (BlockColumn column : ce.columnAdd) {
@@ -541,6 +544,26 @@ public class Terrain {
             segments.add(s);
 
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) s.debug_print();
+
+            // Anything else doesn't impact it anymore.
+            if (ce.time >= 1) break;
+        }
+
+        // Now do the weird ass dp
+        SegmentList.Segment startingSegment = segments.get(startIndex).segments.floor(new SegmentList.Segment(start.y, start.y));
+        if (startingSegment == null) {
+            //Pathcrafter.LOGGER.warn("Invalid starting segment!");
+            return -1;
+        }
+        startingSegment.val = 0;
+
+        // The end segment
+        SegmentList.Segment endSegment =
+                segments.get(segments.size() - 1).segments.floor(new SegmentList.Segment(start.y, start.y));
+        if (endSegment == null || endSegment.end != end.y) {
+            // Invalid end segment
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("Invalid end segment!");
+            return -1;
         }
 
         if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) {
@@ -549,14 +572,7 @@ public class Terrain {
             Pathcrafter.LOGGER.info("----------------------------------------------------------------------");
             Pathcrafter.LOGGER.info(String.format("Starting index: %d", startIndex));
         }
-        // Now do the weird ass dp
 
-        SegmentList.Segment startingSegment = segments.get(startIndex).segments.floor(new SegmentList.Segment(start.y, start.y));
-        if (startingSegment == null) {
-            //Pathcrafter.LOGGER.warn("Invalid starting segment!");
-            return -1;
-        }
-        startingSegment.val = 0;
         for (int i=startIndex; i < segments.size() - 1; i++) {
             // This DP transition is not accurate - not taking into account jumping early to avoid headhitting
             // And just directly saying "if there's a hole u can jump down"
@@ -652,10 +668,6 @@ public class Terrain {
             }
         }
 
-        SegmentList.Segment endSegment =
-                segments.get(segments.size() - 1).segments.floor(new SegmentList.Segment(start.y, start.y));
-        assert endSegment != null;
-
         if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) {
             Pathcrafter.LOGGER.info("----------------------------------------------------------------------");
             Pathcrafter.LOGGER.info(String.format("Final result: %f", endSegment.val));
@@ -730,7 +742,6 @@ public class Terrain {
 
 
     public double getResult() {
-        graph.initEdgeList();
 
         int vertexCount = graph.vertices.size();
         boolean[] genEdges = new boolean[vertexCount];
@@ -746,14 +757,14 @@ public class Terrain {
         while (!q.isEmpty()) {
             int front = q.remove();
             Pathcrafter.LOGGER.info(
-                    String.format("Getting paths from %s (%d) | dist: %f",
-                            graph.getVertex(front), front, dist[front]));
+                    String.format("Getting paths from %s (%d) | dist: %f | dist + heuristic: %f",
+                            graph.getVertex(front), front, dist[front], bestDist[front]));
             if (front == 1) {
                 // End!
                 int cur = 1;
                 while (cur != 0) {
                     cur = last[cur];
-                    Pathcrafter.LOGGER.info("From: " + cur + "(" + graph.getVertex(cur) + ")");
+                    Pathcrafter.LOGGER.info("From: " + graph.getVertex(cur) + "(" + cur + ")");
                 }
                 return dist[1];
             }

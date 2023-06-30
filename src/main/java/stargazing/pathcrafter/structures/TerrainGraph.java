@@ -17,6 +17,8 @@ public class TerrainGraph {
     ArrayList<Vertex> vertices = new ArrayList<>();
     ArrayList<ArrayList<Edge>> edges = new ArrayList<>();
 
+    boolean initialized = false;
+
     TerrainGraph() {}
 
     /**
@@ -68,6 +70,9 @@ public class TerrainGraph {
     }
 
     public void addEdge(int from, int to, double w) {
+        if (!initialized) {
+            initEdgeList();
+        }
         Edge e = new Edge(to, w);
         edges.get(from).add(e);
     }
