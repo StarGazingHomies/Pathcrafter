@@ -22,17 +22,19 @@ Nothing. What, I literally *just* made it.
 
 Very early alpha. The following features have yet to be implemented:
 
-- Solid Blocks pathfinding
-- Path overlay
+- Solid Blocks pathfinding (in progress)
+- Overlays (up next, for debugging)
+---
 - Jumping
 - Head hitting
 - Other collision boxes
 - Advanced jumping
-   - Air rerouting to make jumps possible
-   - Better handle while jumping (making neos possible)
+   - Air rerouting to thread through collision boxes
+   - Holding keys while jumping (making neos possible)
 - Regular blipping (Blips ups are patched 1.14.4)
 - Optimizations, pt. 1
 - Clean up for v1.0.0
+---
 - Head hitting v2 (partial blocks)
 - Ladders, Water & MLG option
 - Swimming
