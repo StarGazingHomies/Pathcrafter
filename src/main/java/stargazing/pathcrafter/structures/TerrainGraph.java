@@ -11,6 +11,7 @@ public class TerrainGraph {
     public static class Edge {
         int to;
         double weight;
+        Edge(int t, double w) {to = t; weight = w;}
     }
 
     ArrayList<Vertex> vertices = new ArrayList<>();
@@ -54,5 +55,20 @@ public class TerrainGraph {
         // Note that this heuristic isn't at all accurate when partial blocks or blipping are involved.
         double y_result = v.y < dest.y ? (dest.y - v.y) * ELEVATE_JUMP_TICKS : 0;
         return Math.max(xz_result, y_result);
+    }
+
+    public double heuristic(int v, int dest) {
+        return heuristic(getVertex(v), getVertex(dest));
+    }
+
+    public Vertex getVertex(int i) {return vertices.get(i);}
+
+    public void initEdgeList() {
+        for (int i=0; i<vertices.size(); i++) edges.add(new ArrayList<>());
+    }
+
+    public void addEdge(int from, int to, double w) {
+        Edge e = new Edge(to, w);
+        edges.get(from).add(e);
     }
 }

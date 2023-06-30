@@ -1,21 +1,27 @@
 package stargazing.pathcrafter.structures;
 
+import net.minecraft.block.Block;
 import net.minecraft.world.chunk.Chunk;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import stargazing.pathcrafter.Pathcrafter;
+import stargazing.pathcrafter.util.PlayerSpeed;
 import stargazing.pathcrafter.util.Preprocessing;
 import stargazing.pathcrafter.util.World;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
+import javax.swing.text.Segment;
+import java.util.*;
 
 import static stargazing.pathcrafter.Constants.*;
+import static stargazing.pathcrafter.util.PlayerSpeed.ticksToFallTo;
 
 public class Terrain {
-    int minX, minZ, maxX, maxZ;
+    public final int minX, minZ, maxX, maxZ;
     // Note that y ranges aren't important, we are processing all the blocks in these chunks anyway
 
     BlockColumn[][] columns;
     TerrainGraph graph = new TerrainGraph();
+    TerrainBounds bounds = new TerrainBounds();
 
     public Terrain(int startX, int startY, int startZ, int endX, int endY, int endZ) {
         // Establish ranges
@@ -23,11 +29,21 @@ public class Terrain {
         minZ = Math.min(startZ, endZ) - MAX_SEARCH_RANGE;
         maxX = Math.max(startX, endX) + MAX_SEARCH_RANGE;
         maxZ = Math.max(startZ, endZ) + MAX_SEARCH_RANGE;
+
+        // Start and end vertices
+        graph.vertices.add(new Vertex(startX, startY, startZ, (int)startX, (int)startZ));
+        graph.vertices.add(new Vertex(endX, endY, endZ, (int)endX, (int)endZ));
+
         genColumns();
     }
 
     public BlockColumn getColumn(int x, int z) {
-        return columns[x - minX][z - minZ];
+        if (minX <= x && x <= maxX && minZ <= z && z <= maxZ) {
+            return columns[x - minX][z - minZ];
+        }
+        else {
+            return null;
+        }
     }
 
     /**
@@ -59,9 +75,6 @@ public class Terrain {
                         if (absZ < minZ) continue;
                         if (absZ > maxZ) break;
                         columns[absX - minX][absZ - minZ] = processedChunk[x][z];
-                        if (TERRAIN_DEBUG_INFO)
-                            Pathcrafter.LOGGER.info(
-                                    String.format("Finished generating column at (%d, %d)", absX, absZ));
                     }
                 }
             }
@@ -74,21 +87,17 @@ public class Terrain {
     }
 
     /**
-     * Computes all relevant vertices for
+     * Computes all relevant vertices for the algorithm.
      */
     public void findVertices() {
         long startTime = System.nanoTime();
 
-        // Start and end vertices
-
-
         for (int x = minX; x < maxX - 1; x++) {
             for (int z = minZ; z < maxZ - 1; z++) {
-                Pathcrafter.LOGGER.info(String.format("%d, %d", x, z));
+                //Pathcrafter.LOGGER.info(String.format("%d, %d", x, z));
                 findVerticesAt(x, z);
             }
         }
-
 
         if (TERRAIN_DEBUG_INFO) {
             long endTime = System.nanoTime();
@@ -98,8 +107,12 @@ public class Terrain {
         }
     }
 
+    /**
+     * Simple vertex generation algorithm
+     * @param x x coordinate of intersection - 1
+     * @param z z coordinate of intersection - 1
+     */
     public void findVerticesAt(int x, int z) {
-        long startTime = System.nanoTime();
         // Look for vertices close to the vertex of original blocks.
         // i.e. the corners of blocks
         // For now, this simple algo of a shitton of if/else & switch statements will do.
@@ -121,8 +134,6 @@ public class Terrain {
             double y2 = column2.getY(i2);
             double y3 = column3.getY(i3);
             double curY = Math.min(Math.min(y0, y1), Math.min(y2, y3));
-            if (TERRAIN_DEBUG_INFO)
-                Pathcrafter.LOGGER.info(String.format("Currently at y level %f", curY));
 
             // y coordinates match and it is a top surface
             boolean state0 = column0.getState(i0);
@@ -302,23 +313,470 @@ public class Terrain {
                     break;
             }
         }
-        if (TERRAIN_DEBUG_INFO) {
-            long endTime = System.nanoTime();
-            Pathcrafter.LOGGER.info(
-                    String.format("Vertex generation of (%d, %d) took %f seconds",
-                            x, z, (endTime - startTime) / 1.0e9));
-        }
     }
 
-    public static Vertex createVertex(double x, double y, double z, int type) {
-        // four solid-block-creatable vertices
+    /**
+     * Creates a vertex at the given coordinates with an offset
+     * @param x The x coordinate
+     * @param y The y coordinate
+     * @param z The z coordinate
+     * @param type Only the last 2 bits are read. 2nd last bit denotes x-offset, last bit denotes z-offset
+     * @return A new vertex object
+     */
+    @Contract("_, _, _, _ -> new")
+    public static @NotNull Vertex createVertex(double x, double y, double z, int type) {
+        // Useable even with non-full block vertices, because the player-width offset is important
+        // Although the columnX and columnZ args may change if there's hitboxes that extend past the block
         // 0 1
         // 2 3 -> +z
         // |
         // v +x
         double xCoord = x + 1 + ((type & 2) > 0 ? 1 : -1) * PLAYER_HALF_WIDTH;
         double zCoord = z + 1 + ((type & 1) > 0 ? 1 : -1) * PLAYER_HALF_WIDTH;
-        return new Vertex(xCoord, y, zCoord);
+        return new Vertex(xCoord, y, zCoord, (int)x, (int)z);
+    }
+
+    public void findEdge(int s, int e) {
+        findEdge(graph.getVertex(s), graph.getVertex(e));
+    }
+
+    public static class ColumnEvent implements Comparable<ColumnEvent> {
+        double time;
+        ArrayList<BlockColumn> columnAdd, columnRemove;
+        ColumnEvent(double t) {
+            time = t;
+            columnAdd = new ArrayList<>();
+            columnRemove = new ArrayList<>();
+        }
+
+        void addColumn(BlockColumn bc) {
+            columnAdd.add(bc);
+        }
+
+        void removeColumn(BlockColumn bc) {
+            columnRemove.add(bc);
+        }
+
+        void debug_print() {
+            Pathcrafter.LOGGER.info(String.format("Time %f", this.time));
+            for (BlockColumn column : this.columnAdd) {
+                Pathcrafter.LOGGER.info(String.format("Add column %s", column));
+            }
+            for (BlockColumn column : this.columnRemove) {
+                Pathcrafter.LOGGER.info(String.format("Remove column %s", column));
+            }
+        }
+
+        @Override
+        public int compareTo(@NotNull ColumnEvent o) {
+            return Double.compare(this.time, o.time);
+        }
+
+        public boolean equals(@NotNull ColumnEvent o) {
+            return this.time == o.time;
+        }
+    }
+
+    public void findAllEdgesFrom(int i) {
+        long startTime = System.nanoTime();
+        Vertex s = graph.getVertex(i);
+
+        // Debug counters
+        int success_hasPath = 0;
+        int success_noPath = 0;
+        int exception = 0;
+        int unloaded = 0;
+
+        for (int j=0; j<graph.vertices.size(); j++) {
+            if (j == i) continue;
+            double edgeResult = -1;
+            try {
+                edgeResult = findEdge(s, graph.getVertex(j));
+            }
+            catch (java.lang.NullPointerException e) {
+                exception++;
+                e.printStackTrace();
+                Pathcrafter.LOGGER.info(String.format("Error finding path from %d to %d\n", i, j));
+                continue;
+            }
+            // counters
+            if (edgeResult == -1) success_noPath++;
+            if (edgeResult == -2) unloaded++;
+            // ignore unreachable
+            if (edgeResult < 0) continue;
+
+            // Debug
+            if (TERRAIN_EDGE_LIST_EDGES)
+                Pathcrafter.LOGGER.info(String.format("Edge from %d (%s) to %d (%s)-> %f",
+                        i, graph.getVertex(i), j, graph.getVertex(j), edgeResult));
+
+            graph.addEdge(i, j, edgeResult);
+            success_hasPath++;
+        }
+        if (TERRAIN_EDGE_GENERATOR_DEBUG_INFO) {
+            long endTime = System.nanoTime();
+            Pathcrafter.LOGGER.info(
+                    String.format("Edge generation from %s (%d) took %f seconds",
+                            graph.getVertex(i), i, (endTime - startTime) / 1.0e9));
+            Pathcrafter.LOGGER.info(
+                    String.format("%d success and has path, %d success with no path", success_hasPath, success_noPath)
+            );
+            Pathcrafter.LOGGER.info(
+                    String.format("%d cross unloaded chunks, %d resulted in an exception", unloaded, exception)
+            );
+        }
+    }
+
+    /**
+     * Find the edge weight between two vertices
+     * @param start Starting vertex
+     * @param end Destination vertex
+     * @return The edge travel time if path is available, otherwise -1.
+     */
+    public double findEdge(Vertex start, Vertex end) {
+        // Convert this into 2d, and then... use dp?
+        if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO)
+            Pathcrafter.LOGGER.info(String.format("Finding path from %s to %s", start, end));
+
+        // x and z directions
+        int x_dir = end.x > start.x ? 1 : -1;
+        int z_dir = end.z > start.z ? 1 : -1;
+
+        // Distance
+        double dist = Math.pow((end.x - start.x) * (end.x - start.x) + (end.z - start.z) * (end.z - start.z), 0.5f);
+
+        // Find all relevant columns
+        Set<BlockColumn> relevantColumns = new HashSet<BlockColumn>();
+        Set<BlockColumn> centralColumns = getColumns(
+                start.x - PLAYER_HALF_WIDTH * x_dir,
+                start.z - PLAYER_HALF_WIDTH * z_dir,
+                end.x + PLAYER_HALF_WIDTH * x_dir,
+                end.z + PLAYER_HALF_WIDTH * z_dir);
+        Set<BlockColumn> upperColumns = getColumns(
+                start.x - PLAYER_HALF_WIDTH * x_dir,
+                start.z + PLAYER_HALF_WIDTH * z_dir,
+                end.x - PLAYER_HALF_WIDTH * x_dir,
+                end.z + PLAYER_HALF_WIDTH * z_dir);
+        Set<BlockColumn> lowerColumns = getColumns(
+                start.x + PLAYER_HALF_WIDTH * x_dir,
+                start.z - PLAYER_HALF_WIDTH * z_dir,
+                end.x + PLAYER_HALF_WIDTH * x_dir,
+                end.z - PLAYER_HALF_WIDTH * z_dir);
+        if (centralColumns == null || upperColumns == null || lowerColumns == null) {
+            // Congrats, you hit the edge of the loaded area!
+            // The weights can't be calculated, so... have a -1!
+            return -2;
+        }
+        relevantColumns.addAll(centralColumns);
+        relevantColumns.addAll(upperColumns);
+        relevantColumns.addAll(lowerColumns);
+
+        // Generate whatever shit the dp will run on
+        TreeSet<ColumnEvent> columnEvents = new TreeSet<>();
+        for (BlockColumn c : relevantColumns) {
+            double[] times = getColumnTimes(start.x, start.z, end.x, end.z, c);
+
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO)
+                Pathcrafter.LOGGER.info(String.format("Column %s times: %f, %f", c, times[0], times[1]));
+
+            ColumnEvent addEvent = new ColumnEvent(times[0]);
+            ColumnEvent addDup = columnEvents.floor(addEvent);
+            //if (addDup != null) addDup.debug_print();
+            if (addDup != null && addDup.time == times[0]) {
+                //Pathcrafter.LOGGER.info("Addition duplicate found.");
+                addDup.addColumn(c);
+            }
+            else {
+                //Pathcrafter.LOGGER.info("No duplicate, adding add event.");
+                addEvent.addColumn(c);
+                columnEvents.add(addEvent);
+            }
+
+            ColumnEvent removeEvent = new ColumnEvent(times[1]);
+            ColumnEvent removeDup = columnEvents.floor(removeEvent);
+            //if (removeDup != null) removeDup.debug_print();
+            if (removeDup != null && removeDup.time == times[1]) {
+                //Pathcrafter.LOGGER.info("Removal duplicate found.");
+                removeDup.removeColumn(c);
+            }
+            else {
+                //Pathcrafter.LOGGER.info("No duplicate, adding removal event.");
+                removeEvent.removeColumn(c);
+                columnEvents.add(removeEvent);
+            }
+
+            /*
+            Pathcrafter.LOGGER.info("Current events:");
+            for (ColumnEvent ce : columnEvents) {
+                ce.debug_print();
+            }
+            Pathcrafter.LOGGER.info(new String(new char[50]).replace('\0', '-'));
+            */
+        }
+
+        Set<BlockColumn> currentColumns = new HashSet<>();
+        ArrayList<SegmentList> segments = new ArrayList<>();
+        int startIndex = -1;
+
+        for (ColumnEvent ce : columnEvents) {
+            // Anything else doesn't impact it anymore.
+            if (ce.time >= 1) break;
+
+            //Pathcrafter.LOGGER.info(String.format("Time %f", ce.time));
+            for (BlockColumn column : ce.columnAdd) {
+                currentColumns.add(column);
+                //Pathcrafter.LOGGER.info(String.format("Add column %s", column));
+            }
+            for (BlockColumn column : ce.columnRemove) {
+                currentColumns.remove(column);
+                //Pathcrafter.LOGGER.info(String.format("Remove column %s", column));
+            }
+
+            if (ce.time < 0) startIndex++;
+
+            SegmentList s = new SegmentList(ce.time);
+            for (BlockColumn c : currentColumns) {
+                s.addColumn(c);
+            }
+            segments.add(s);
+
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) s.debug_print();
+        }
+
+        if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) {
+            Pathcrafter.LOGGER.info("----------------------------------------------------------------------");
+            Pathcrafter.LOGGER.info("-------------------------------DP START-------------------------------");
+            Pathcrafter.LOGGER.info("----------------------------------------------------------------------");
+            Pathcrafter.LOGGER.info(String.format("Starting index: %d", startIndex));
+        }
+        // Now do the weird ass dp
+
+        SegmentList.Segment startingSegment = segments.get(startIndex).segments.floor(new SegmentList.Segment(start.y, start.y));
+        if (startingSegment == null) {
+            //Pathcrafter.LOGGER.warn("Invalid starting segment!");
+            return -1;
+        }
+        startingSegment.val = 0;
+        for (int i=startIndex; i < segments.size() - 1; i++) {
+            // This DP transition is not accurate - not taking into account jumping early to avoid headhitting
+            // And just directly saying "if there's a hole u can jump down"
+            // but will do for now
+            // Also I should rename these variables soon, it's confusing af right now
+
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) {
+                Pathcrafter.LOGGER.info("----------------------------------------------------------------------");
+                Pathcrafter.LOGGER.info(String.format("Looking at segment list: %d", i));
+            }
+            SegmentList curSegment = segments.get(i);
+            // i+1 here since you jump off the end of a block, not the start
+            double segmentCurDist = segments.get(i+1).time * dist;
+
+
+            for (SegmentList.Segment s : curSegment.segments) {
+                // Ignore unreachable segments
+                if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info(String.format("Current segment: %s", s));
+                if (s.val == -1) continue;
+
+                // Try sprinting forwards
+                SegmentList nextSegment = segments.get(i+1);
+                // Current time + time it takes to sprint to the edge of the block
+                SegmentList.Segment sprintingToSegment = nextSegment.segments.floor(new SegmentList.Segment(s.end, s.end));
+                double curCost = s.val + (nextSegment.time - curSegment.time) * dist / SPRINT_SPEED;
+                // If there is somewhere to sprint to
+                if (sprintingToSegment != null && sprintingToSegment.end <= s.end) {
+                    // time to edge + ticks to fall, if any
+                    double sprintCost = curCost + ticksToFallTo(sprintingToSegment.end - s.end);
+                    sprintingToSegment.updateVal(sprintCost);
+                    if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO)
+                        Pathcrafter.LOGGER.info("Sprinting to segment " + sprintingToSegment + " requires tick " + sprintCost);
+                }
+
+                // Try jumping forwards
+                int curTick = 0;
+                double curDist = 0, curHeight = 0, baseHeight = s.end;
+                boolean blocked = false;
+                double minHeight = baseHeight;
+
+                for (int j=i; j<segments.size(); j++) {
+                    if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("Looking at segment " + j);
+                    SegmentList jumpCurSegment = segments.get(j);
+                    if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) jumpCurSegment.debug_print();
+                    // How long, in meters, this segment lasts
+                    double maxDeltaDist = jumpCurSegment.time * dist - segmentCurDist;
+                    if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("Max delta dist: " + maxDeltaDist);
+
+                    // Mark all available jumps
+                    // 'Tis the ascent of a jump
+                    if (curTick < 5) curHeight = PlayerSpeed.flatJumpDistances.get(5).minY;
+
+                    minHeight = Math.min(minHeight, jumpCurSegment.floor(minHeight));
+                    // If ur collided with ground, then it's over
+                    if (minHeight > curHeight + baseHeight) break;
+
+                    // Minimum reachable height, through ground holes.
+                    // Again, not technically correct, just an approximation
+                    if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("This segment's minimum height: " + minHeight);
+                    if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("This segment's maximum height: " + curHeight + baseHeight);
+
+                    // Reminder to correct the cost (based on landing time) later
+                    jumpCurSegment.mark(minHeight, curHeight + baseHeight, curCost, baseHeight);
+
+                    while (curTick <= MAX_SEARCH_JUMP_TICK) {
+                        // Just check if a jump is doable right now
+                        curDist = PlayerSpeed.flatJumpDistances.get(curTick).deltaX;
+                        curHeight = PlayerSpeed.flatJumpDistances.get(curTick).minY;
+                        // First the player Y is changed, then XZ, when collision checking
+                        if (jumpCurSegment.contains(curHeight + baseHeight)) {
+                            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("Blocked!");
+                            blocked = true;
+                            break;
+                        }
+                        // Go to next segment if the distance is too far
+                        if (curDist > maxDeltaDist) break;
+
+                        curTick++;
+                        if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("Advancing to tick " + curTick + "!");
+                    }
+
+                    if (curTick > MAX_SEARCH_JUMP_TICK) break;
+                    if (blocked) break;
+                    if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("Advancing to next segment!");
+                }
+            }
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) {
+                Pathcrafter.LOGGER.info("----------------------------------------------------------------------");
+                Pathcrafter.LOGGER.info("Current status:");
+                for (int j=startIndex; j < segments.size(); j++) {
+                    segments.get(j).debug_print();
+                }
+            }
+        }
+
+        SegmentList.Segment endSegment =
+                segments.get(segments.size() - 1).segments.floor(new SegmentList.Segment(start.y, start.y));
+        assert endSegment != null;
+
+        if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) {
+            Pathcrafter.LOGGER.info("----------------------------------------------------------------------");
+            Pathcrafter.LOGGER.info(String.format("Final result: %f", endSegment.val));
+        }
+        // Note to self: Still need to add a final bit of sprinting distance.
+        return endSegment.val;
+    }
+
+    /**
+     * Gets the blockcolumns that intersect a segment from (startX, startZ) to (endX, endZ)
+     * @param startX Start x coordinate
+     * @param startZ Start z coordinate
+     * @param endX End x coordinate
+     * @param endZ End z coordinate
+     * @return The columns intersected by the segment
+     */
+    public Set<BlockColumn> getColumns(double startX, double startZ, double endX, double endZ) {
+        // Is there a good line algorithm for fractional coordinates?
+        Set<BlockColumn> columns = new HashSet<>();
+        int xDir = endX > startX ? 1 : -1;
+        int zDir = endZ > startZ ? 1 : -1;
+
+        int curX = (int)Math.floor(startX);
+        int curZ = (int)Math.floor(startZ);
+        int endIntX = (int)Math.floor(endX);
+        int endIntZ = (int)Math.floor(endZ);
+
+        double nextXUpdate = (curX + ((xDir + 1) >> 1) - startX) / (endX - startX);
+        double nextZUpdate = (curZ + ((zDir + 1) >> 1) - startZ) / (endZ - startZ);
+        while (curX != endIntX || curZ != endIntZ) {
+            BlockColumn curColumn = getColumn(curX, curZ);
+            if (TERRAIN_COLUMNS_DEBUG_INFO) Pathcrafter.LOGGER.info(String.format("Adding column %s!", curColumn));
+            // Out of bounds!
+            if (curColumn == null) {
+                return null;
+            }
+            columns.add(curColumn);
+            if (nextXUpdate < nextZUpdate) {
+                curX += xDir;
+                nextXUpdate += xDir / (endX - startX);
+            }
+            else {
+                curZ += zDir;
+                nextZUpdate += zDir / (endZ - startZ);
+            }
+        }
+        columns.add(getColumn(curX, curZ));
+
+        return columns;
+    }
+
+    public double[] getColumnTimes(double startX, double startZ, double endX, double endZ, @NotNull BlockColumn column) {
+        // W/ solid blocks assumption, we can assume hitbox of -0.3 ~ 1.3.
+        double x_t1 = (column.blockX     - PLAYER_HALF_WIDTH - startX) / (endX - startX);
+        double x_t2 = (column.blockX + 1 + PLAYER_HALF_WIDTH - startX) / (endX - startX);
+        if (x_t2 < x_t1) {
+            double temp = x_t1;
+            x_t1 = x_t2;
+            x_t2 = temp;
+        }
+        double z_t1 = (column.blockZ     - PLAYER_HALF_WIDTH - startZ) / (endZ - startZ);
+        double z_t2 = (column.blockZ + 1 + PLAYER_HALF_WIDTH - startZ) / (endZ - startZ);
+        if (z_t2 < z_t1) {
+            double temp = z_t1;
+            z_t1 = z_t2;
+            z_t2 = temp;
+        }
+        return new double[]{Math.max(z_t1, x_t1), Math.min(z_t2, x_t2)};
+    }
+
+    public TerrainGraph getGraph() {return this.graph;}
+
+
+    public double getResult() {
+        graph.initEdgeList();
+
+        int vertexCount = graph.vertices.size();
+        boolean[] genEdges = new boolean[vertexCount];
+        double[] dist = new double[vertexCount];
+        double[] bestDist = new double[vertexCount];
+        int[] last = new int[vertexCount];
+        Arrays.fill(dist, Double.MAX_VALUE);
+        Arrays.fill(bestDist, Double.MAX_VALUE);
+        PriorityQueue<Integer> q = new PriorityQueue<>(Comparator.comparingDouble((Integer o) -> bestDist[o]));
+        q.add(0);
+        dist[0] = 0;
+
+        while (!q.isEmpty()) {
+            int front = q.remove();
+            Pathcrafter.LOGGER.info(
+                    String.format("Getting paths from %s (%d) | dist: %f",
+                            graph.getVertex(front), front, dist[front]));
+            if (front == 1) {
+                // End!
+                int cur = 1;
+                while (cur != 0) {
+                    cur = last[cur];
+                    Pathcrafter.LOGGER.info("From: " + cur + "(" + graph.getVertex(cur) + ")");
+                }
+                return dist[1];
+            }
+
+            if (!genEdges[front]) {
+                findAllEdgesFrom(front);
+                genEdges[front] = true;
+            }
+
+            for (TerrainGraph.Edge e : graph.edges.get(front)) {
+                double result = dist[front] + e.weight;
+                //Pathcrafter.LOGGER.info("To: " + e.to + ", Result: " + result);
+                if (result < dist[e.to]) {
+                    dist[e.to] = result;
+                    last[e.to] = front;
+                    bestDist[e.to] = result + graph.heuristic(e.to, 1);
+                    q.add(e.to);
+                }
+            }
+        }
+
+        // No path
+        return -1;
     }
 
 }

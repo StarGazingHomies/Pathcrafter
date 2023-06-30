@@ -5,6 +5,12 @@ public class Constants {
     // Debug printing toggle
     public static final boolean BLOCK_COLUMN_DEBUG_INFO = false;
     public static final boolean TERRAIN_DEBUG_INFO = true;
+    public static final boolean TERRAIN_EDGE_GENERATOR_DEBUG_INFO = true;
+    public static final boolean TERRAIN_EDGE_LIST_EDGES = false;
+    public static final boolean TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO = false;
+    public static final boolean TERRAIN_COLUMNS_DEBUG_INFO = false;
+    public static final boolean SEGMENT_LIST_DEBUG_INFO = false;
+    public static final boolean SEGMENT_LIST_ALLOW_INFO_CALL = false;
 
     // Player related constants
     public static final double PLAYER_HEIGHT = 1.8;
@@ -38,7 +44,8 @@ public class Constants {
     public static final double SPRINT_JUMP_MODIFIER = 0.2;
 
     // Options, will implement something later
-    public static final int MAX_SEARCH_RANGE = 50;
+    public static final int MAX_SEARCH_RANGE = 20;
     public static final double SEARCH_RANGE_FACTOR = 0.7;
+    public static final int MAX_SEARCH_JUMP_TICK = 17;
 
 }

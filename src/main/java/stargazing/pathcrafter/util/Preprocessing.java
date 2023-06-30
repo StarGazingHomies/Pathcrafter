@@ -4,9 +4,11 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Material;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
+import org.jetbrains.annotations.NotNull;
 import stargazing.pathcrafter.Pathcrafter;
 import stargazing.pathcrafter.structures.BlockColumn;
 
@@ -21,11 +23,13 @@ public class Preprocessing {
      */
     public static BlockColumn[][] processChunk(Chunk c, MinecraftClient client) {
         assert client.world != null;
+        assert c != null;
         // Initialize the columns
+        ChunkPos p = c.getPos();
         BlockColumn[][] columns = new BlockColumn[CHUNK_SIZE][CHUNK_SIZE];
         for (int x=0; x<CHUNK_SIZE; x++) {
             for (int z=0; z<CHUNK_SIZE; z++) {
-                columns[x][z] = new BlockColumn(x, z);
+                columns[x][z] = new BlockColumn(x + p.x * CHUNK_SIZE, z + p.z * CHUNK_SIZE);
             }
         }
 

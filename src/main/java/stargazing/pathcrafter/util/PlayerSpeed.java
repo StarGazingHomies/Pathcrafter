@@ -68,6 +68,15 @@ public class PlayerSpeed {
         return t;
     }
 
+    public static int jumpTicksToFallTo(double y) {
+        for (JumpData jd : flatJumpDistances) {
+            // Ignore ascent
+            if (jd.maxY < jd.minY) continue;
+            if (y > jd.minY) return jd.ticksElapsed;
+        }
+        return -1;
+    }
+
     public static void initializeJumpData(double momentumX, boolean Strafe45) {
         // Initial state
         // Assume 0 momentum for now.

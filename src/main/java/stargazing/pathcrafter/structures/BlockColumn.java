@@ -35,7 +35,7 @@ public class BlockColumn {
         }
     }
 
-    private final int blockX, blockZ;
+    public final int blockX, blockZ;
 
     public final ArrayList<HorizontalSurface> surfaces = new ArrayList<>();
 
@@ -44,6 +44,10 @@ public class BlockColumn {
     public BlockColumn(int x, int z) {
         blockX = x;
         blockZ = z;
+    }
+
+    public String toString() {
+        return String.format("BlockColumn(%d, %d)", blockX, blockZ);
     }
 
     /**
@@ -80,13 +84,6 @@ public class BlockColumn {
         }
     }
 
-    public Stream<HorizontalSurface> getSurfacesAt(double yLevel) {
-        // Ideas for if this method is too slow:
-        // Binary search because the list is sorted?
-        // Or use a 384-element array instead, sacrificing memory for performance?
-        return surfaces.stream().filter(surface -> surface.y == yLevel);
-    }
-
     public void debug_logSurfaces() {
         Pathcrafter.LOGGER.info(String.format("Block colum at x: %d, z: %d:", blockX, blockZ));
         for (HorizontalSurface surface : surfaces) {
@@ -111,5 +108,10 @@ public class BlockColumn {
      */
     public boolean getState(int i) {
         return i < surfaces.size() && surfaces.get(i).type;
+    }
+
+    public double getNextStepY(int i) {
+        if (!getState(i)) return getY(i);
+        else return getY(i+1);
     }
 }

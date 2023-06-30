@@ -7,8 +7,8 @@ this mod aims to navigate the 3d Minecraft landscape without
 restricting movement to whole blocks.
 
 At its core is still the A* algorithm, although the generation of
-vertices and edges are heavily modified to _resemble_ a Navmesh.
-By doing so, movement can occur between partial blocks and will
+vertices and edges are heavily modified.
+By doing so, movement can occur at any angle and will
 heavily reduce the travel time of the planned path.
 
 Note that this mod carries a heavy performance penalty over 
@@ -28,9 +28,10 @@ Very early alpha. The following features have yet to be implemented:
 - Head hitting
 - Other collision boxes
 - Advanced jumping
-   - air critical points, for threading between hitboxes
-   - Rerouting to take a (faster) jump across a corner / an edge
+   - Air rerouting to make jumps possible
+   - Better handle while jumping (making neos possible)
 - Regular blipping (Blips ups are patched 1.14.4)
+- Optimizations, pt. 1
 - Clean up for v1.0.0
 - Head hitting v2 (partial blocks)
 - Ladders, Water & MLG option
@@ -38,7 +39,6 @@ Very early alpha. The following features have yet to be implemented:
 - Damage avoidance
 - Momentum handling
 - Slime bounces
-- Falling blocks (flat cost)
 - Caching & Path segmentation
 - Food calculations
 - World state management (block placing, etc.)
@@ -46,8 +46,8 @@ Very early alpha. The following features have yet to be implemented:
 - Basic redstone solving (one could wish)
 - Shadowmap Integration (when Shadowmap releases)
 
-The following is outside the scope of the mod. If you want to make
-a feature listed here, ask for permission and implement it yourself.
+The following is outside the current scope of the mod. If you want to
+see a feature listed here, implement it yourself.
 
 - Mob avoidance
 - Automatic movement
