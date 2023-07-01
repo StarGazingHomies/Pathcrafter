@@ -14,7 +14,7 @@ public class TerrainGraph {
         Edge(int t, double w) {to = t; weight = w;}
     }
 
-    ArrayList<Vertex> vertices = new ArrayList<>();
+    public ArrayList<Vertex> vertices = new ArrayList<>();
     ArrayList<ArrayList<Edge>> edges = new ArrayList<>();
 
     boolean initialized = false;

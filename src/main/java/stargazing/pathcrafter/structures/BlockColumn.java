@@ -73,7 +73,7 @@ public class BlockColumn {
         int topSurfaceIndex = surfaces.size() - 1;
         HorizontalSurface newTopSurface = new HorizontalSurface(minX, maxX, minZ, maxZ, maxY, true);
         if (!surfaces.isEmpty() &&
-                surfaces.get(topSurfaceIndex).y + PLAYER_HEIGHT > minY &&
+                surfaces.get(topSurfaceIndex).y > minY &&
                 surfaces.get(topSurfaceIndex).hasSameDimensions(newTopSurface)) {
             surfaces.remove(topSurfaceIndex);
             surfaces.add(newTopSurface);

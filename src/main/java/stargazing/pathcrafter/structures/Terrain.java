@@ -124,6 +124,13 @@ public class Terrain {
         BlockColumn column2 = getColumn(x+1, z);
         BlockColumn column3 = getColumn(x+1, z+1);
 
+        if (TERRAIN_VERTEX_DEBUG_INFO) {
+            column0.debug_logSurfaces();
+            column1.debug_logSurfaces();
+            column2.debug_logSurfaces();
+            column3.debug_logSurfaces();
+        }
+
         int i0=0, i1=0, i2=0, i3=0;
         while (i0 < column0.surfaces.size() ||
                 i1 < column1.surfaces.size() ||
@@ -154,6 +161,12 @@ public class Terrain {
             if (match1) i1++;
             if (match2) i2++;
             if (match3) i3++;
+
+            if (TERRAIN_VERTEX_DEBUG_INFO) {
+                Pathcrafter.LOGGER.info(String.format("Y: %s -> State: %s", curY, matchState));
+                Pathcrafter.LOGGER.info(String.format("Match status: %b, %b, %b, %b", match0, match1, match2, match3));
+                Pathcrafter.LOGGER.info(String.format("Valid status: %b, %b, %b, %b", valid0, valid1, valid2, valid3));
+            }
 
             // Big switch statement
             switch (matchState) {

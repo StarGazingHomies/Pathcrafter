@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
@@ -11,6 +12,7 @@ import net.minecraft.world.chunk.Chunk;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import stargazing.pathcrafter.overlay.OverlayRenderer;
 import stargazing.pathcrafter.structures.Terrain;
 import stargazing.pathcrafter.structures.Vertex;
 import stargazing.pathcrafter.util.Preprocessing;
@@ -25,11 +27,13 @@ public class Pathcrafter implements ClientModInitializer {
     private static KeyBinding keyBinding;
     public static final Logger LOGGER = LoggerFactory.getLogger("Pathcrafter");
 
+    public static Terrain terrain;
+
     private boolean pressed = false;
     @Override
     public void onInitializeClient() {
         LOGGER.info("Pathcrafter loaded!");
-        //HudRenderCallback.EVENT.register(new OverlayRenderer());
+        WorldRenderEvents.END.register(new OverlayRenderer());
 
         keyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.pathcrafter.debug",
@@ -45,11 +49,14 @@ public class Pathcrafter implements ClientModInitializer {
                 }
                 pressed = true;
                 assert client.player != null;
-                Terrain t = new Terrain(1, 0,1, 15, 0,15);
-                t.findVertices();
                 client.player.sendMessage(Text.literal("Debug Button Pressed"), false);
+
+                //terrain = new Terrain(1, 0,1, 15, 0,15);
+                //terrain.findVerticesAt(4, 4);
+                terrain = new Terrain(1, 0,1, 15, 0,15);
+                terrain.findVertices();
                 //t.findEdge(4103, 3768);
-                t.getResult();
+                //t.getResult();
             }
             else {
                 pressed = false;

@@ -5,6 +5,7 @@ public class Constants {
     // Debug printing toggle
     public static final boolean BLOCK_COLUMN_DEBUG_INFO = false;
     public static final boolean TERRAIN_DEBUG_INFO = true;
+    public static final boolean TERRAIN_VERTEX_DEBUG_INFO = false;
     public static final boolean TERRAIN_EDGE_GENERATOR_DEBUG_INFO = true;
     public static final boolean TERRAIN_EDGE_LIST_EDGES = false;
     public static final boolean TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO = false;
