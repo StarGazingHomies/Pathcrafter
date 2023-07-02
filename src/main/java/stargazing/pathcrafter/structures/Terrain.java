@@ -456,6 +456,13 @@ public class Terrain {
         if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO)
             Pathcrafter.LOGGER.info(String.format("Finding path from %s to %s", start, end));
 
+        // If the vertices are the same, return.
+        if (start.equals(end)) {
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO)
+                Pathcrafter.LOGGER.info(String.format("%s and %s are the same vertex!", start, end));
+            return -1;
+        }
+
         // x and z directions
         int x_dir = end.x > start.x ? 1 : -1;
         int z_dir = end.z > start.z ? 1 : -1;
@@ -493,6 +500,11 @@ public class Terrain {
         TreeSet<ColumnEvent> columnEvents = new TreeSet<>();
         for (BlockColumn c : relevantColumns) {
             double[] times = getColumnTimes(start.x, start.z, end.x, end.z, c);
+
+            // Ignore columns that have 0 impact
+            if (times[0] == times[1]) {
+                continue;
+            }
 
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO)
                 Pathcrafter.LOGGER.info(String.format("Column %s times: %f, %f", c, times[0], times[1]));
@@ -573,11 +585,29 @@ public class Terrain {
         // The end segment
         SegmentList.Segment endSegment =
                 segments.get(segments.size() - 1).segments.floor(new SegmentList.Segment(start.y, start.y));
-        if (endSegment == null || endSegment.end != end.y) {
-            // Invalid end segment
-            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("Invalid end segment!");
+        double endOffset = 0d;
+        if (endSegment == null) {
             return -1;
         }
+        if (endSegment.end != end.y) {
+            // The end segment can be ambiguous if it's exactly at the endpoint.
+            // So we attempt to let the segment before 1.0 be the end
+            if (segments.get(segments.size() - 1).time != 1d) {
+                if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO)
+                    Pathcrafter.LOGGER.info("Invalid end segment! No path found.");
+                return -1;
+            }
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO)
+                Pathcrafter.LOGGER.info("Invalid end segment! Trying previous...");
+            endSegment = segments.get(segments.size() - 2).segments.floor(new SegmentList.Segment(start.y, start.y));
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("New segment: " + endSegment);
+            if (endSegment == null || endSegment.end != end.y) {
+                if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("Invalid end segment!");
+                return -1;
+            }
+        }
+
+        Pathcrafter.LOGGER.info("test");
 
         if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) {
             Pathcrafter.LOGGER.info("----------------------------------------------------------------------");

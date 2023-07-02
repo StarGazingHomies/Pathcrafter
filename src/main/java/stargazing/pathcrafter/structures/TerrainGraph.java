@@ -9,13 +9,13 @@ import static stargazing.pathcrafter.Constants.ELEVATE_JUMP_TICKS;
 public class TerrainGraph {
 
     public static class Edge {
-        int to;
-        double weight;
+        public final int to;
+        public final double weight;
         Edge(int t, double w) {to = t; weight = w;}
     }
 
     public ArrayList<Vertex> vertices = new ArrayList<>();
-    ArrayList<ArrayList<Edge>> edges = new ArrayList<>();
+    public ArrayList<ArrayList<Edge>> edges = new ArrayList<>();
 
     boolean initialized = false;
 

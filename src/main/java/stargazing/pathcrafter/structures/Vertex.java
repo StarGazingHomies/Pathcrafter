@@ -15,6 +15,10 @@ public class Vertex {
         this.columnZ = columnZ;
     }
 
+    public boolean equals(Vertex other) {
+        return x==other.x && y==other.y && z==other.z;
+    }
+
     public String toString() {
         return String.format("Vertex(%f, %f, %f)", x, y, z);
     }
