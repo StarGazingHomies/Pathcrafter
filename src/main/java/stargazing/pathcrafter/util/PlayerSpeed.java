@@ -52,9 +52,7 @@ public class PlayerSpeed {
         // therefore pos_j = sum( i from 1 to j : y'_i ) - j * k;
         // Using geometric seq. sum, pos_j = kd(1-d^j) / (1-d) - j * k
         // Now we're solving for the first j such that pos_j < y
-        // Could binary search for a log(n) solution... but could we just use newton's method a few times?
-
-
+        // Could binary search for a O(log(n)) solution... but could we just use newton's method a few times for O(1)
 
         // OR, since I'm too lazy, just...
 

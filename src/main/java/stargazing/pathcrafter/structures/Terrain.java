@@ -640,11 +640,14 @@ public class Terrain {
                 Pathcrafter.LOGGER.info(String.format("Looking at segment list %d at time %f", i, curTime));
             }
 
+            boolean hasReachableSegment = false;
 
             for (SegmentList.Segment s : curSegment.segments) {
                 // Ignore unreachable segments
                 if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info(String.format("Current segment: %s", s));
                 if (s.val == -1) continue;
+
+                hasReachableSegment = true;
 
                 // Try sprinting forwards
                 SegmentList nextSegment = segments.get(i+1);
@@ -718,6 +721,12 @@ public class Terrain {
                 for (int j=startIndex; j < segments.size(); j++) {
                     segments.get(j).debug_print();
                 }
+            }
+
+            if (!hasReachableSegment) {
+                Pathcrafter.LOGGER.info("No reachable segment found, terminating with no path.");
+                // If there's no reachable segment, then there won't be any further down the line.
+                return -1;
             }
         }
 
