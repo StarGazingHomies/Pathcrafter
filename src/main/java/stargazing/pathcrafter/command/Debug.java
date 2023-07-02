@@ -1,13 +1,10 @@
 package stargazing.pathcrafter.command;
 
-import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableTextContent;
 import stargazing.pathcrafter.Pathcrafter;
 
 public class Debug {

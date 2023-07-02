@@ -1,22 +1,16 @@
 package stargazing.pathcrafter.command;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.server.command.CommandManager;
 import net.minecraft.text.Text;
 
 public class Command {
 
     public static void register() {
-        com.mojang.brigadier.Command<FabricClientCommandSource> command = context -> {
-            context.getSource().sendError(Text.literal("Called /foo with no arguments"));
-            return 1;
-        };
         ClientCommandRegistrationCallback c =
                 (dispatcher, registryAccess) -> {
                     LiteralCommandNode<FabricClientCommandSource> pathNode = ClientCommandManager
