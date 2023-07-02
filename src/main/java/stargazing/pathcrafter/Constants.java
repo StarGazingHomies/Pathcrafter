@@ -3,15 +3,15 @@ package stargazing.pathcrafter;
 public class Constants {
 
     // Debug printing toggle
-    public static final boolean BLOCK_COLUMN_DEBUG_INFO = false;
-    public static final boolean TERRAIN_DEBUG_INFO = true;
-    public static final boolean TERRAIN_VERTEX_DEBUG_INFO = false;
-    public static final boolean TERRAIN_EDGE_GENERATOR_DEBUG_INFO = true;
-    public static final boolean TERRAIN_EDGE_LIST_EDGES = false;
-    public static final boolean TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO = false;
-    public static final boolean TERRAIN_COLUMNS_DEBUG_INFO = false;
-    public static final boolean SEGMENT_LIST_DEBUG_INFO = false;
-    public static final boolean SEGMENT_LIST_ALLOW_INFO_CALL = false;
+    public static boolean BLOCK_COLUMN_DEBUG_INFO = false;
+    public static boolean TERRAIN_DEBUG_INFO = true;
+    public static boolean TERRAIN_VERTEX_DEBUG_INFO = false;
+    public static boolean TERRAIN_EDGE_GENERATOR_DEBUG_INFO = true;
+    public static boolean TERRAIN_EDGE_LIST_EDGES = false;
+    public static boolean TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO = true;
+    public static boolean TERRAIN_COLUMNS_DEBUG_INFO = true;
+    public static boolean SEGMENT_LIST_DEBUG_INFO = false;
+    public static boolean SEGMENT_LIST_ALLOW_INFO_CALL = true;
 
     // Player related constants
     public static final double PLAYER_HEIGHT = 1.8;
