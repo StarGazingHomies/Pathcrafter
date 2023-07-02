@@ -9,7 +9,7 @@ public class Constants {
     public static boolean TERRAIN_EDGE_GENERATOR_DEBUG_INFO = true;
     public static boolean TERRAIN_EDGE_LIST_EDGES = false;
     public static boolean TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO = true;
-    public static boolean TERRAIN_COLUMNS_DEBUG_INFO = true;
+    public static boolean TERRAIN_COLUMNS_DEBUG_INFO = false;
     public static boolean SEGMENT_LIST_DEBUG_INFO = false;
     public static boolean SEGMENT_LIST_ALLOW_INFO_CALL = true;
 

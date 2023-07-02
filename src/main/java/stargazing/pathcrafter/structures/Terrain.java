@@ -469,6 +469,7 @@ public class Terrain {
 
         // Distance
         double dist = Math.pow((end.x - start.x) * (end.x - start.x) + (end.z - start.z) * (end.z - start.z), 0.5f);
+        Pathcrafter.LOGGER.info(String.format("XZ-distance: %f", dist));
 
         // Find all relevant columns
         Set<BlockColumn> relevantColumns = new HashSet<BlockColumn>();
@@ -599,8 +600,14 @@ public class Terrain {
             }
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO)
                 Pathcrafter.LOGGER.info("Invalid end segment! Trying previous...");
+
             endSegment = segments.get(segments.size() - 2).segments.floor(new SegmentList.Segment(start.y, start.y));
-            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("New segment: " + endSegment);
+            endOffset = (segments.get(segments.size() - 1).time - segments.get(segments.size() - 2).time)
+                    * dist / SPRINT_SPEED;
+
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO)
+                Pathcrafter.LOGGER.info(String.format("New segment: %s (offset: %f)", endSegment.toString(), endOffset));
+
             if (endSegment == null || endSegment.end != end.y) {
                 if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) Pathcrafter.LOGGER.info("Invalid end segment!");
                 return -1;
@@ -622,13 +629,16 @@ public class Terrain {
             // but will do for now
             // Also I should rename these variables soon, it's confusing af right now
 
+            SegmentList curSegment = segments.get(i);
+            // We start at 0, not a negative number.
+            double curTime = Math.max(0, curSegment.time);
+            // i+1 here since you can choose to jump off the end of a block
+            double segmentCurDist = segments.get(i+1).time * dist;
+
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) {
                 Pathcrafter.LOGGER.info("----------------------------------------------------------------------");
-                Pathcrafter.LOGGER.info(String.format("Looking at segment list: %d", i));
+                Pathcrafter.LOGGER.info(String.format("Looking at segment list %d at time %f", i, curTime));
             }
-            SegmentList curSegment = segments.get(i);
-            // i+1 here since you jump off the end of a block, not the start
-            double segmentCurDist = segments.get(i+1).time * dist;
 
 
             for (SegmentList.Segment s : curSegment.segments) {
@@ -640,7 +650,7 @@ public class Terrain {
                 SegmentList nextSegment = segments.get(i+1);
                 // Current time + time it takes to sprint to the edge of the block
                 SegmentList.Segment sprintingToSegment = nextSegment.segments.floor(new SegmentList.Segment(s.end, s.end));
-                double curCost = s.val + (nextSegment.time - curSegment.time) * dist / SPRINT_SPEED;
+                double curCost = s.val + (nextSegment.time - curTime) * dist / SPRINT_SPEED;
                 // If there is somewhere to sprint to
                 if (sprintingToSegment != null && sprintingToSegment.end <= s.end) {
                     // time to edge + ticks to fall, if any
@@ -713,10 +723,10 @@ public class Terrain {
 
         if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO) {
             Pathcrafter.LOGGER.info("----------------------------------------------------------------------");
-            Pathcrafter.LOGGER.info(String.format("Final result: %f", endSegment.val));
+            Pathcrafter.LOGGER.info(String.format("Final result: %f", endSegment.val + endOffset));
         }
         // Note to self: Still need to add a final bit of sprinting distance.
-        return endSegment.val;
+        return endSegment.val + endOffset;
     }
 
     /**
