@@ -27,9 +27,17 @@ public class PlayerSpeed {
 
     public static final int JUMP_DATA_START_TICK = 7;
     public static final ArrayList<JumpData> flatJumpDistances = new ArrayList<>();
+    public static final ArrayList<Double> airVelocity = new ArrayList<>();
 
     public static void initializeFreeFallData() {
+        // The only important part is how much to expand by.
+        double velX = 0;
 
+        for (int tick = 0; tick < 120; tick++) {
+            velX = velX * HORIZONTAL_DRAG + HORIZONTAL_ACCELERATION_AIR * SPRINT_FACTOR;
+
+            airVelocity.add(velX);
+        }
     }
 
     /*
@@ -122,6 +130,7 @@ public class PlayerSpeed {
     static {
         // initializeJumpData(FLAT_MOMENTUM, true);
         initializeJumpData(0.0, false);
+        initializeFreeFallData();
     }
 
     public static void main(String[] args) {

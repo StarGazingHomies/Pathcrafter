@@ -2,23 +2,12 @@ package stargazing.pathcrafter;
 
 public class Constants {
 
-    // Debug printing toggle
-    public static boolean BLOCK_COLUMN_DEBUG_INFO = false;
-    public static boolean TERRAIN_DEBUG_INFO = true;
-    public static boolean TERRAIN_VERTEX_DEBUG_INFO = false;
-    public static boolean TERRAIN_EDGE_GENERATOR_DEBUG_INFO = true;
-    public static boolean TERRAIN_EDGE_LIST_EDGES = false;
-    public static boolean TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO = true;
-    public static boolean TERRAIN_COLUMNS_DEBUG_INFO = false;
-    public static boolean SEGMENT_LIST_DEBUG_INFO = false;
-    public static boolean SEGMENT_LIST_ALLOW_INFO_CALL = true;
-
     // Player related constants
     public static final double PLAYER_HEIGHT = 1.8;
     public static final double PLAYER_WIDTH_MARGIN = 0.002;
     public static final double PLAYER_WIDTH = 0.6;
     public static final double PLAYER_HALF_WIDTH = 0.3; // Arguably more useful
-    public static final double PLAYER_HALF_WIDTH_PADDED = 0.32;
+    public static final double PLAYER_HALF_WIDTH_PADDED = 0.298;
 
     // Chunk-related constants
     public static final int CHUNK_SIZE = 16;
@@ -44,6 +33,9 @@ public class Constants {
     public static final double SPRINT_FACTOR = 1.3;
     public static final double STRAIGHT_FACTOR = 0.98; // 45-Strafe --> 1.0
     public static final double SPRINT_JUMP_MODIFIER = 0.2;
+
+    // Other movement
+    public static final double BLIP_UP_MAX_DISTANCE = 0.6;
 
     // Options, will implement something later
     public static final int MAX_SEARCH_RANGE = 20;

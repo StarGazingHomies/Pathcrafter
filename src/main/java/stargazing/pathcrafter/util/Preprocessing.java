@@ -13,6 +13,7 @@ import stargazing.pathcrafter.Pathcrafter;
 import stargazing.pathcrafter.structures.BlockColumn;
 
 import static stargazing.pathcrafter.Constants.*;
+import static stargazing.pathcrafter.config.DebugToggles.BLOCK_COLUMN_DEBUG_INFO;
 
 public class Preprocessing {
 
@@ -36,7 +37,7 @@ public class Preprocessing {
         for (ChunkSection cs : c.getSectionArray()) {
             int subchunkY = cs.getYOffset();
             // Debug info
-            if (BLOCK_COLUMN_DEBUG_INFO)
+            if (BLOCK_COLUMN_DEBUG_INFO.enabled())
                 Pathcrafter.LOGGER.info(String.format("Chunk Y offset: %d", subchunkY));
 
             for (int i=0; i<CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE; i++) {
@@ -63,7 +64,7 @@ public class Preprocessing {
         }
 
         // Debugging
-        if (BLOCK_COLUMN_DEBUG_INFO) {
+        if (BLOCK_COLUMN_DEBUG_INFO.enabled()) {
             for (int x=0; x<CHUNK_SIZE; x++) {
                 for (int z=0; z<CHUNK_SIZE; z++) {
                     columns[x][z].debug_logSurfaces();

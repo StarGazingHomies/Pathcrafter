@@ -10,7 +10,7 @@ import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import stargazing.pathcrafter.command.Command;
+import stargazing.pathcrafter.command.CommandRegistrar;
 import stargazing.pathcrafter.overlay.OverlayRenderer;
 import stargazing.pathcrafter.structures.Terrain;
 
@@ -28,6 +28,8 @@ public class Pathcrafter implements ClientModInitializer {
         LOGGER.info("Pathcrafter loaded!");
         WorldRenderEvents.END.register(new OverlayRenderer());
 
+        CommandRegistrar.register();
+
         debugActionKeyBinding = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.pathcrafter.debugAction",
                 InputUtil.Type.KEYSYM,
@@ -41,8 +43,6 @@ public class Pathcrafter implements ClientModInitializer {
                 GLFW.GLFW_KEY_H,
                 "category.pathcrafter"
         ));
-
-        Command.register();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (debugActionKeyBinding.wasPressed()) {
@@ -59,7 +59,7 @@ public class Pathcrafter implements ClientModInitializer {
                 terrain.findVertices();
                 //terrain.findAllEdgesFrom(0);
                 //t.findEdge(4103, 3768);
-                //t.getResult();
+                terrain.getResult();
             }
             else {
                 debugActionPressed = false;

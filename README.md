@@ -11,10 +11,13 @@ vertices and edges are heavily modified.
 By doing so, movement can occur at any angle and will
 heavily reduce the travel time of the planned path.
 
-Note that this mod carries a heavy performance penalty over 
+Note:
+- The mod tries to find a "good enough" solution, **not** _the most_
+optimal one.
+- This mod carries a heavy performance penalty over 
 alternatives. The mod is not aimed at botting. It is meant 
-to be a tool for general navigation without elytra or for 
-set seed speedrunners.
+to be a tool for general navigation without elytra or potentially
+for set seed speedrunners.
 
 The following have been implemented:
 
@@ -31,13 +34,14 @@ Very early alpha. The following features have yet to be implemented:
 - Advanced jumping
    - Air rerouting to thread through collision boxes
    - Holding keys while jumping (making neos possible)
-- Regular blipping (Blips ups are patched 1.14.4)
-- Optimizations, pt. 1
+- Blipping (post jump)
+- Optimizations
 - Clean up for v1.0.0
 ---
 - Head hitting v2 (partial blocks)
 - Ladders, Water & MLG option
 - Swimming
+- Extra stops
 - Damage avoidance
 - Momentum handling
 - Slime bounces
