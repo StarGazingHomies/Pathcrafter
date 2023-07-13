@@ -18,7 +18,7 @@ import java.lang.Math;
 
 
 public class OverlayRenderer implements WorldRenderEvents.End {
-    // Very much don't know what to do here
+    // Mess of a bunch of code. It's going to change when I eventually make the final UI stuffs
 
     public static final int MAX_BUFFER_SIZE = 2097152;
 
@@ -43,6 +43,36 @@ public class OverlayRenderer implements WorldRenderEvents.End {
             buffer.vertex(positionMatrix, (float) v.x+offSet, (float) v.y, (float) v.z-offSet).color(r, g, b, a).next();
             buffer.vertex(positionMatrix, (float) v.x+offSet, (float) v.y, (float) v.z+offSet).color(r, g, b, a).next();
         }
+        tessellator.draw();
+    }
+
+    public void drawLinesTest(MatrixStack matrixStack) {
+        // Prior to the function call:
+        // Set up matrix stack with the relevant matrices (in this case, projection and view)
+        // Possibly change OpenGL settings like culling / depth func
+
+        // Use the lines shader
+        RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
+        RenderSystem.lineWidth(4f);
+
+        // For future reference, see com.mojang.blaze3d.platform.GLX._renderCrosshair
+        Matrix4f positionMatrix = matrixStack.peek().getPositionMatrix();
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+
+        float r=0.0f, g=1.0f, b=0.0f, a=1.0f;
+
+        buffer.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
+
+        // why the fuck do you need a normal when drawing a LINE?
+        // THERE ARE INFINITELY MANY!
+        // and it's just a flat colour anyway!
+        buffer.vertex(positionMatrix, 0, 1, 1).color(r, g, b, a).normal(1.0f, 0.0f, 0.0f).next();
+        buffer.vertex(positionMatrix, 0, 2, 1).color(r, g, b, a).normal(1.0f, 0.0f, 0.0f).next();
+        buffer.vertex(positionMatrix, 0, 2, 1).color(r, g, b, a).normal(0.0f, 1.0f, 0.0f).next();
+        buffer.vertex(positionMatrix, 1, 2, 1).color(r, g, b, a).normal(0.0f, 1.0f, 0.0f).next();
+
         tessellator.draw();
     }
 
@@ -88,12 +118,6 @@ public class OverlayRenderer implements WorldRenderEvents.End {
     @Override
     public void onEnd(WorldRenderContext context) {
 
-        if (Pathcrafter.terrain == null) return;
-        if (!Pathcrafter.debugRenderToggle) return;
-
-        RenderSystem.disableCull();
-        RenderSystem.disableDepthTest();
-
         Camera camera = context.camera();
 
         MatrixStack matrixStack = context.matrixStack();
@@ -106,12 +130,15 @@ public class OverlayRenderer implements WorldRenderEvents.End {
 
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-
         RenderSystem.disableCull();
         RenderSystem.depthFunc(GL11.GL_ALWAYS);
 
-        drawVertices(matrixStack);
-        test(context, matrixStack);
+        if (Pathcrafter.terrain != null && Pathcrafter.debugRenderToggle) {
+            drawVertices(matrixStack);
+            test(context, matrixStack);
+        }
+
+        drawLinesTest(matrixStack);
 
         matrixStack.pop();
         RenderSystem.depthFunc(GL11.GL_LEQUAL);
