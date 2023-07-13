@@ -23,7 +23,7 @@ The following have been implemented:
 
 Nothing. What, I literally *just* made it.
 
-Very early alpha. The following features have yet to be implemented:
+The following features have yet to be implemented:
 
 - Solid Blocks pathfinding (in progress)
 - Overlays (up next, for debugging)

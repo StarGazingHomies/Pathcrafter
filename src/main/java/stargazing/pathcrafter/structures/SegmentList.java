@@ -5,7 +5,6 @@ import stargazing.pathcrafter.Pathcrafter;
 import stargazing.pathcrafter.util.PlayerSpeed;
 
 import java.util.Comparator;
-import java.util.Objects;
 import java.util.TreeSet;
 
 import static stargazing.pathcrafter.Constants.*;
@@ -14,9 +13,10 @@ import static stargazing.pathcrafter.config.DebugToggles.SEGMENT_LIST_DEBUG_INFO
 import static stargazing.pathcrafter.config.DebugToggles.SEGMENT_LIST_ALLOW_INFO_CALL;
 
 public class SegmentList {
-    public static class Segment {
+    public static class Segment implements Comparable<Segment> {
         public final double start, end;
         public double val;
+        public TerrainGraph.Edge.EdgeAction action;
         public Segment(double s, double e) {
             start = s;
             end = e;
@@ -24,34 +24,33 @@ public class SegmentList {
         }
 
         public String toString() {
-            return String.format("Segment(%f, %f) -> %f", start, end, val);
+            return String.format("Segment(%f, %f) -> %f [LastAction: %s]", start, end, val, action);
         }
 
-        public void updateVal(double newVal) {
-            if (val == -1) val = newVal;
-            else val = Math.min(val, newVal);
+        public void updateVal(double newVal, TerrainGraph.Edge.EdgeAction newAction) {
+            if (val == -1 || newVal < val) {
+                val = newVal;
+                action = newAction;
+            }
         }
-    }
-
-    public static class SegmentComparator implements Comparator<Segment> {
 
         @Override
-        public int compare(Segment o1, Segment o2) {
-            return Double.compare(o1.start, o2.start);
+        public int compareTo(@NotNull SegmentList.Segment o) {
+            return Double.compare(start, o.start);
         }
     }
 
-    public final double time;
+    public final double dist;
     public final TreeSet<Segment> segments;
 
-    SegmentList(double time) {
-        this.time = time;
-        segments = new TreeSet<>(new SegmentComparator());
+    SegmentList(double dist) {
+        this.dist = dist;
+        segments = new TreeSet<>();
     }
 
     SegmentList(@NotNull SegmentList copy) {
         segments = (TreeSet<Segment>) copy.segments.clone();
-        time = copy.time;
+        dist = copy.dist;
     }
 
     public void addSegment(Segment s) {
@@ -90,7 +89,7 @@ public class SegmentList {
         if (floor == null) {
             if (SEGMENT_LIST_DEBUG_INFO.enabled()) {
                 Pathcrafter.LOGGER.warn("Encountered null floor when looking for floor of " + y + "!");
-                Pathcrafter.LOGGER.warn("SegmentList at time " + time);
+                Pathcrafter.LOGGER.warn("SegmentList at time " + dist);
                 for (Segment s : segments) {
                     Pathcrafter.LOGGER.warn("> " + s);
                 }
@@ -112,7 +111,8 @@ public class SegmentList {
             double slack = Math.max(Math.min(maxDist - nextSegDist, maxSlack), 0) / SPRINT_SPEED;
 
             double newVal = initialVal + landingTick - slack;
-            s.updateVal(newVal);
+            s.updateVal(newVal, new TerrainGraph.Edge.EdgeAction(TerrainGraph.Edge.EdgeActionType.JUMP,
+                    initialVal - slack));
             if (SEGMENT_LIST_DEBUG_INFO.enabled()) {
                 Pathcrafter.LOGGER.info(String.format("Args | minH %f | maxH %f | initVal %f | initY %f | curTick %d | maxDeltaDist %f | maxSlack %f",
                         minHeight, maxHeight, initialVal, initialY, curTick, nextSegDist, maxSlack));
@@ -126,7 +126,7 @@ public class SegmentList {
 
     public void debug_print() {
         if (!SEGMENT_LIST_ALLOW_INFO_CALL.enabled()) return;
-        Pathcrafter.LOGGER.info("SegmentList at time " + time);
+        Pathcrafter.LOGGER.info("SegmentList at time " + dist);
         for (Segment s : segments) {
             Pathcrafter.LOGGER.info("> " + s);
         }

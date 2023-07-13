@@ -11,6 +11,26 @@ public class TerrainGraph {
     public static class Edge {
         public final int to;
         public final double weight;
+
+        public enum EdgeActionType {
+            WALK,
+            JUMP
+        }
+
+        public static class EdgeAction {
+            // Describes one action in the edge
+            EdgeActionType action;
+            double dist;
+            EdgeAction(EdgeActionType edgeActionType, double dist) {
+                this.action = edgeActionType;
+                this.dist = dist;
+            }
+
+            public String toString() {
+                return String.format("%s at %f", action, dist);
+            }
+        }
+
         Edge(int t, double w) {to = t; weight = w;}
     }
 

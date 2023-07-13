@@ -1,6 +1,8 @@
 package stargazing.pathcrafter;
 
 public class Constants {
+    // Epsilon for double comparisons
+    public static final double EPSILON = 0.00001;
 
     // Player related constants
     public static final double PLAYER_HEIGHT = 1.8;
