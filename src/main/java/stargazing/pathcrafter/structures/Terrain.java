@@ -314,12 +314,50 @@ public class Terrain {
                     }
                     break;
 
+                // Occasionally these cases can generate vertices
+                case 3:
+                    if (state2 && !state3) {
+                        graph.vertices.add(createVertex(x, curY, z, 1));
+                        graph.vertices.add(createVertex(x, curY, z, 3));
+                    }
+                    if (!state2 && state3) {
+                        graph.vertices.add(createVertex(x, curY, z, 0));
+                        graph.vertices.add(createVertex(x, curY, z, 2));
+                    }
+                    break;
+                case 5:
+                    if (state1 && !state3) {
+                        graph.vertices.add(createVertex(x, curY, z, 2));
+                        graph.vertices.add(createVertex(x, curY, z, 3));
+                    }
+                    if (!state1 && state3) {
+                        graph.vertices.add(createVertex(x, curY, z, 0));
+                        graph.vertices.add(createVertex(x, curY, z, 1));
+                    }
+                    break;
+                case 10:
+                    if (state0 && !state2) {
+                        graph.vertices.add(createVertex(x, curY, z, 2));
+                        graph.vertices.add(createVertex(x, curY, z, 3));
+                    }
+                    if (!state0 && state2) {
+                        graph.vertices.add(createVertex(x, curY, z, 0));
+                        graph.vertices.add(createVertex(x, curY, z, 1));
+                    }
+                    break;
+                case 12:
+                    if (state0 && !state1) {
+                        graph.vertices.add(createVertex(x, curY, z, 1));
+                        graph.vertices.add(createVertex(x, curY, z, 3));
+                    }
+                    if (!state0 && state1) {
+                        graph.vertices.add(createVertex(x, curY, z, 0));
+                        graph.vertices.add(createVertex(x, curY, z, 2));
+                    }
+                    break;
+
                 // These cases don't generate any vertices
                 case 0:
-                case 3:
-                case 5:
-                case 10:
-                case 12:
                 case 15:
                     break;
             }
