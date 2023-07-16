@@ -1,6 +1,7 @@
 package stargazing.pathcrafter.structures;
 
 import stargazing.pathcrafter.Constants;
+import stargazing.pathcrafter.Pathcrafter;
 
 import java.util.ArrayList;
 
@@ -8,21 +9,26 @@ import static stargazing.pathcrafter.Constants.ELEVATE_JUMP_TICKS;
 
 public class TerrainGraph {
 
+
     public static class Edge {
         public final int to;
         public final double weight;
+        public ArrayList<EdgeAction> actions;
 
         public enum EdgeActionType {
             WALK,
-            JUMP
+            JUMP,
+            BEGIN
         }
 
         public static class EdgeAction {
             // Describes one action in the edge
             EdgeActionType action;
+            double y;
             double dist;
-            EdgeAction(EdgeActionType edgeActionType, double dist) {
+            EdgeAction(EdgeActionType edgeActionType, double y, double dist) {
                 this.action = edgeActionType;
+                this.y = y;
                 this.dist = dist;
             }
 
@@ -31,7 +37,20 @@ public class TerrainGraph {
             }
         }
 
-        Edge(int t, double w) {to = t; weight = w;}
+        public static class EdgeInfo {
+            public final double weight;
+            public ArrayList<EdgeAction> actions;
+
+            public EdgeInfo(double weight, ArrayList<EdgeAction> actions) {
+                this.weight = weight;
+                this.actions = actions;
+            }
+
+            public Edge toEdge(int to) {
+                return new Edge(to, weight, actions);
+            }
+        }
+        Edge(int t, double w, ArrayList<EdgeAction> a) {to = t; weight = w; actions = a;}
     }
 
     public ArrayList<Vertex> vertices = new ArrayList<>();
@@ -89,11 +108,28 @@ public class TerrainGraph {
         for (int i=0; i<vertices.size(); i++) edges.add(new ArrayList<>());
     }
 
-    public void addEdge(int from, int to, double w) {
+    public void addEdge(int from, int to, Edge.EdgeInfo info) {
         if (!initialized) {
             initEdgeList();
         }
-        Edge e = new Edge(to, w);
+        Edge e = info.toEdge(to);
         edges.get(from).add(e);
+    }
+
+    public void interpretEdge(int from, Edge e) {
+        Vertex fromVertex = getVertex(from);
+        Vertex toVertex = getVertex(e.to);
+        for (Edge.EdgeAction action : e.actions) {
+            double[] coordinatesXZ = interpolate(fromVertex, toVertex, action.dist);
+            Pathcrafter.LOGGER.info(String.format("Perform action %s at (%.2f, %.2f, %.2f)",
+                    action.action, coordinatesXZ[0], action.y, coordinatesXZ[1]));
+        }
+    }
+
+    public double[] interpolate(Vertex v1, Vertex v2, double d) {
+        double x1 = v1.x, z1 = v1.z, x2 = v2.x, z2 = v2.z;
+        double totDist = flatEuclideanDist(v1,v2);
+        double fraction = d / totDist;
+        return new double[]{x1 + (x2 - x1) * fraction, z1 + (z2 - z1) * fraction};
     }
 }

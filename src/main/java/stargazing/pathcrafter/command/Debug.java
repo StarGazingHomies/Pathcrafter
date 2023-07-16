@@ -9,6 +9,7 @@ import net.minecraft.command.CommandException;
 import net.minecraft.text.Text;
 import stargazing.pathcrafter.Pathcrafter;
 import stargazing.pathcrafter.config.DebugToggles;
+import stargazing.pathcrafter.structures.TerrainGraph;
 
 public class Debug {
     public static int boop(CommandContext<FabricClientCommandSource> context) {
@@ -46,8 +47,8 @@ public class Debug {
                 0 <= v2 && v2 < Pathcrafter.terrain.getGraph().vertices.size())) {
             throw new CommandException(Text.literal("Vertex index out of range!"));
         }
-        double result = Pathcrafter.terrain.findEdge(v1, v2);
-        context.getSource().sendFeedback(Text.literal(String.format("Operation completed with result %f", result)));
+        TerrainGraph.Edge.EdgeInfo result = Pathcrafter.terrain.findEdge(v1, v2);
+        context.getSource().sendFeedback(Text.literal(String.format("Operation completed with result %f", result.weight)));
         return 1;
     }
 

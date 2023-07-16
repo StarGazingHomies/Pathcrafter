@@ -17,6 +17,7 @@ public class SegmentList {
         public final double start, end;
         public double val;
         public TerrainGraph.Edge.EdgeAction action;
+        public Segment from;
         public Segment(double s, double e) {
             start = s;
             end = e;
@@ -27,10 +28,11 @@ public class SegmentList {
             return String.format("Segment(%f, %f) -> %f [LastAction: %s]", start, end, val, action);
         }
 
-        public void updateVal(double newVal, TerrainGraph.Edge.EdgeAction newAction) {
+        public void updateVal(double newVal, TerrainGraph.Edge.EdgeAction newAction, Segment from) {
             if (val == -1 || newVal < val) {
                 val = newVal;
                 action = newAction;
+                this.from = from;
             }
         }
 
@@ -100,7 +102,7 @@ public class SegmentList {
     }
 
     public void mark(double minHeight, double maxHeight, double initialVal, double initialY, int curTick,
-                     double nextSegDist, double maxSlack) {
+                     double nextSegDist, double maxSlack, double startingSegmentEndDist, Segment src) {
         // Keeping it here for now. Up next, jump segment
         for (Segment s = segments.floor(new Segment(minHeight, minHeight));
              s != null && s.end <= maxHeight;
@@ -112,7 +114,7 @@ public class SegmentList {
 
             double newVal = initialVal + landingTick - slack;
             s.updateVal(newVal, new TerrainGraph.Edge.EdgeAction(TerrainGraph.Edge.EdgeActionType.JUMP,
-                    initialVal - slack));
+                    initialY, startingSegmentEndDist - slack * SPRINT_SPEED), src);
             if (SEGMENT_LIST_DEBUG_INFO.enabled()) {
                 Pathcrafter.LOGGER.info(String.format("Args | minH %f | maxH %f | initVal %f | initY %f | curTick %d | maxDeltaDist %f | maxSlack %f",
                         minHeight, maxHeight, initialVal, initialY, curTick, nextSegDist, maxSlack));
