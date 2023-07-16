@@ -18,7 +18,8 @@ public class TerrainGraph {
         public enum EdgeActionType {
             WALK,
             JUMP,
-            BEGIN
+            BEGIN,
+            END
         }
 
         public static class EdgeAction {
@@ -116,14 +117,17 @@ public class TerrainGraph {
         edges.get(from).add(e);
     }
 
-    public void interpretEdge(int from, Edge e) {
+    public ArrayList<Terrain.PathAction> interpretEdge(int from, Edge e) {
         Vertex fromVertex = getVertex(from);
         Vertex toVertex = getVertex(e.to);
+        ArrayList<Terrain.PathAction> r = new ArrayList<>();
         for (Edge.EdgeAction action : e.actions) {
             double[] coordinatesXZ = interpolate(fromVertex, toVertex, action.dist);
             Pathcrafter.LOGGER.info(String.format("Perform action %s at (%.2f, %.2f, %.2f)",
                     action.action, coordinatesXZ[0], action.y, coordinatesXZ[1]));
+            r.add(new Terrain.PathAction(coordinatesXZ[0], action.y, coordinatesXZ[1], action.action));
         }
+        return r;
     }
 
     public double[] interpolate(Vertex v1, Vertex v2, double d) {

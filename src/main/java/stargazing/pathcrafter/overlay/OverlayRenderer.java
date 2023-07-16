@@ -11,6 +11,7 @@ import net.minecraft.util.math.RotationAxis;
 import org.joml.*;
 import org.lwjgl.opengl.GL11;
 import stargazing.pathcrafter.Pathcrafter;
+import stargazing.pathcrafter.structures.Terrain;
 import stargazing.pathcrafter.structures.TerrainGraph;
 import stargazing.pathcrafter.structures.Vertex;
 
@@ -50,6 +51,9 @@ public class OverlayRenderer implements WorldRenderEvents.End {
         // Prior to the function call:
         // Set up matrix stack with the relevant matrices (in this case, projection and view)
         // Possibly change OpenGL settings like culling / depth func
+        if (Pathcrafter.terrain == null || Pathcrafter.terrain.linesTest == null || Pathcrafter.terrain.linesTest.size() == 0) {
+            return;
+        }
 
         // Use the lines shader
         RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
@@ -63,20 +67,26 @@ public class OverlayRenderer implements WorldRenderEvents.End {
 
         float r=0.0f, g=1.0f, b=0.0f, a=1.0f;
 
-        buffer.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
+        buffer.begin(VertexFormat.DrawMode.LINE_STRIP, VertexFormats.LINES);
+
+        for (Terrain.PathAction action : Pathcrafter.terrain.linesTest) {
+            buffer
+                    .vertex(positionMatrix, (float) action.x, (float) action.y, (float) action.z)
+                    .color(r,g,b,a)
+                    .normal(0.0f, 1.0f, 0.0f).next();
+        }
 
         // why the fuck do you need a normal when drawing a LINE?
-        // THERE ARE INFINITELY MANY!
-        // and it's just a flat colour anyway!
-        buffer.vertex(positionMatrix, 0, 1, 1).color(r, g, b, a).normal(1.0f, 0.0f, 0.0f).next();
-        buffer.vertex(positionMatrix, 0, 2, 1).color(r, g, b, a).normal(1.0f, 0.0f, 0.0f).next();
-        buffer.vertex(positionMatrix, 0, 2, 1).color(r, g, b, a).normal(0.0f, 1.0f, 0.0f).next();
-        buffer.vertex(positionMatrix, 1, 2, 1).color(r, g, b, a).normal(0.0f, 1.0f, 0.0f).next();
+        // to convert it into a rect? D:
+        // buffer.vertex(positionMatrix, 0, 2, 0).color(r, g, b, a).normal(0.0f, 1.0f, 0.0f).next();
+        // buffer.vertex(positionMatrix, 0, 2, 1).color(r, g, b, a).normal(0.0f, 1.0f, 0.0f).next();
+        // // buffer.vertex(positionMatrix, 0, 2, 1).color(r, g, b, a).normal(0.0f, 1.0f, 0.0f).next();
+        // buffer.vertex(positionMatrix, 1, 2, 1).color(r, g, b, a).normal(0.0f, 1.0f, 0.0f).next();
 
         tessellator.draw();
     }
 
-    public void test(WorldRenderContext context, MatrixStack matrixStack) {
+    public void drawDebugText(WorldRenderContext context, MatrixStack matrixStack) {
         // if not generated, skip
 
         MinecraftClient player = MinecraftClient.getInstance();
@@ -134,8 +144,8 @@ public class OverlayRenderer implements WorldRenderEvents.End {
         RenderSystem.depthFunc(GL11.GL_ALWAYS);
 
         if (Pathcrafter.terrain != null && Pathcrafter.debugRenderToggle) {
-            drawVertices(matrixStack);
-            test(context, matrixStack);
+            //drawVertices(matrixStack);
+            //drawDebugText(context, matrixStack);
         }
 
         drawLinesTest(matrixStack);

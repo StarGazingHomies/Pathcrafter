@@ -8,7 +8,6 @@ import stargazing.pathcrafter.util.PlayerSpeed;
 import stargazing.pathcrafter.util.Preprocessing;
 import stargazing.pathcrafter.util.World;
 
-import java.nio.file.Path;
 import java.util.*;
 
 import static stargazing.pathcrafter.Constants.*;
@@ -21,6 +20,19 @@ public class Terrain {
 
     BlockColumn[][] columns;
     TerrainGraph graph = new TerrainGraph();
+
+    public static class PathAction {
+        public final double x, y, z;
+        public final TerrainGraph.Edge.EdgeActionType type;
+
+        public PathAction(double x, double y, double z, TerrainGraph.Edge.EdgeActionType type) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.type = type;
+        }
+    }
+    public ArrayList<PathAction> linesTest = new ArrayList<>();
 
     public Terrain(double startX, double startY, double startZ, double endX, double endY, double endZ) {
         // Establish ranges
@@ -1016,8 +1028,10 @@ public class Terrain {
 
         // End!
         int cur = 1;
+        linesTest.add(new PathAction(graph.getVertex(1).x, graph.getVertex(1).y, graph.getVertex(1).z, TerrainGraph.Edge.EdgeActionType.END));
         while (cur != 0) {
-            graph.interpretEdge(last[cur], lastEdge[cur]);
+            ArrayList<PathAction> edgePositions = graph.interpretEdge(last[cur], lastEdge[cur]);
+            linesTest.addAll(edgePositions);
             cur = last[cur];
             Pathcrafter.LOGGER.info("From: " + graph.getVertex(cur) + "(" + cur + ")");
         }
