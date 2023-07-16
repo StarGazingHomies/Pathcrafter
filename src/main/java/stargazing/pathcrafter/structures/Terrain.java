@@ -8,6 +8,7 @@ import stargazing.pathcrafter.util.PlayerSpeed;
 import stargazing.pathcrafter.util.Preprocessing;
 import stargazing.pathcrafter.util.World;
 
+import java.nio.file.Path;
 import java.util.*;
 
 import static stargazing.pathcrafter.Constants.*;
@@ -511,20 +512,20 @@ public class Terrain {
         // Find all relevant columns
         Set<BlockColumn> relevantColumns = new HashSet<>();
         Set<BlockColumn> centralColumns = getColumns(
-                start.x - PLAYER_HALF_WIDTH_PADDED * x_dir,
-                start.z - PLAYER_HALF_WIDTH_PADDED * z_dir,
-                end.x   + PLAYER_HALF_WIDTH_PADDED * x_dir,
-                end.z   + PLAYER_HALF_WIDTH_PADDED * z_dir);
+                start.x - PLAYER_HALF_WIDTH_EXTRA * x_dir,
+                start.z - PLAYER_HALF_WIDTH_EXTRA * z_dir,
+                end.x   + PLAYER_HALF_WIDTH_EXTRA * x_dir,
+                end.z   + PLAYER_HALF_WIDTH_EXTRA * z_dir);
         Set<BlockColumn> upperColumns = getColumns(
-                start.x - PLAYER_HALF_WIDTH_PADDED * x_dir,
-                start.z + PLAYER_HALF_WIDTH_PADDED * z_dir,
-                end.x   - PLAYER_HALF_WIDTH_PADDED * x_dir,
-                end.z   + PLAYER_HALF_WIDTH_PADDED * z_dir);
+                start.x - PLAYER_HALF_WIDTH_EXTRA * x_dir,
+                start.z + PLAYER_HALF_WIDTH_EXTRA * z_dir,
+                end.x   - PLAYER_HALF_WIDTH_EXTRA * x_dir,
+                end.z   + PLAYER_HALF_WIDTH_EXTRA * z_dir);
         Set<BlockColumn> lowerColumns = getColumns(
-                start.x + PLAYER_HALF_WIDTH_PADDED * x_dir,
-                start.z - PLAYER_HALF_WIDTH_PADDED * z_dir,
-                end.x   + PLAYER_HALF_WIDTH_PADDED * x_dir,
-                end.z   - PLAYER_HALF_WIDTH_PADDED * z_dir);
+                start.x + PLAYER_HALF_WIDTH_EXTRA * x_dir,
+                start.z - PLAYER_HALF_WIDTH_EXTRA * z_dir,
+                end.x   + PLAYER_HALF_WIDTH_EXTRA * x_dir,
+                end.z   - PLAYER_HALF_WIDTH_EXTRA * z_dir);
         if (centralColumns == null || upperColumns == null || lowerColumns == null) {
             // Congrats, you hit the edge of the loaded area!
             // The weights can't be calculated, so... have a negative number!
@@ -621,15 +622,45 @@ public class Terrain {
             if (ce.dist >= dist) break;
         }
 
+        if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
+            Pathcrafter.LOGGER.info("Starting index: " + startIndex);
+
         // Now do the weird ass dp
         if (startIndex == -1) {
             return new TerrainGraph.Edge.EdgeInfo(-1, null);
         }
         SegmentList.Segment startingSegment = segments.get(startIndex).segments.floor(new SegmentList.Segment(start.y, start.y));
+        double startingOffset = 0;
         if (startingSegment == null) {
             //Pathcrafter.LOGGER.warn("Invalid starting segment!");
             return new TerrainGraph.Edge.EdgeInfo(-1, null);
         }
+        // Starting segment can also have the same thing happen as end segment
+        // If it's at the intersection of area of impact of 2 distinct sets of blocks, it can be ambiguous
+        if (startingSegment.end != start.y) {
+            // Again, try 1 before
+            startIndex--;
+            if (startIndex == -1 || Math.abs(segments.get(startIndex).dist - dist) > EPSILON) {
+                if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
+                    Pathcrafter.LOGGER.info("Invalid start segment! No path found.");
+                return new TerrainGraph.Edge.EdgeInfo(-1, null);
+            }
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
+                Pathcrafter.LOGGER.info("Invalid start segment! Trying previous...");
+
+            startingSegment = segments.get(startIndex).segments.floor(new SegmentList.Segment(start.y, start.y));
+            startingOffset = (dist - segments.get(startIndex).dist) / SPRINT_SPEED;
+
+            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
+                Pathcrafter.LOGGER.info(String.format("New start segment: %s (offset: %f)",
+                        startingSegment!=null?startingSegment.toString():"null", startingOffset));
+
+            if (startingSegment == null || startingSegment.end != end.y) {
+                if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled()) Pathcrafter.LOGGER.info("Invalid start segment!");
+                return new TerrainGraph.Edge.EdgeInfo(-1, null);
+            }
+        }
+
         startingSegment.updateVal(
                 0,
                 new TerrainGraph.Edge.EdgeAction(TerrainGraph.Edge.EdgeActionType.BEGIN,startingSegment.end, 0),

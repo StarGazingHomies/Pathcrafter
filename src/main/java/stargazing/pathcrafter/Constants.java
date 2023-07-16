@@ -10,6 +10,7 @@ public class Constants {
     public static final double PLAYER_WIDTH = 0.6;
     public static final double PLAYER_HALF_WIDTH = 0.3; // Arguably more useful
     public static final double PLAYER_HALF_WIDTH_PADDED = 0.298;
+    public static final double PLAYER_HALF_WIDTH_EXTRA = PLAYER_HALF_WIDTH + PLAYER_WIDTH_MARGIN;
 
     // Chunk-related constants
     public static final int CHUNK_SIZE = 16;
