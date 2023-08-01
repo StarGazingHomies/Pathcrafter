@@ -58,7 +58,7 @@ public class Pathcrafter implements ClientModInitializer {
                 terrain = new Terrain(1, 0,1, 15, 0,15);
                 terrain.findVertices();
                 //terrain.findAllEdgesFrom(0);
-                terrain.getResult();
+                //terrain.getResult();
             }
             else {
                 debugActionPressed = false;

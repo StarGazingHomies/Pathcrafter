@@ -51,7 +51,7 @@ public class OverlayRenderer implements WorldRenderEvents.End {
         // Prior to the function call:
         // Set up matrix stack with the relevant matrices (in this case, projection and view)
         // Possibly change OpenGL settings like culling / depth func
-        if (Pathcrafter.terrain == null || Pathcrafter.terrain.linesTest == null || Pathcrafter.terrain.linesTest.size() == 0) {
+        if (Pathcrafter.terrain == null || Pathcrafter.terrain.resultLines == null || Pathcrafter.terrain.resultLines.size() == 0) {
             return;
         }
 
@@ -67,13 +67,14 @@ public class OverlayRenderer implements WorldRenderEvents.End {
 
         float r=0.0f, g=1.0f, b=0.0f, a=1.0f;
 
-        buffer.begin(VertexFormat.DrawMode.LINE_STRIP, VertexFormats.LINES);
+        buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
 
-        for (Terrain.PathAction action : Pathcrafter.terrain.linesTest) {
+        for (Terrain.PathAction action : Pathcrafter.terrain.resultLines) {
             buffer
                     .vertex(positionMatrix, (float) action.x, (float) action.y, (float) action.z)
                     .color(r,g,b,a)
-                    .normal(0.0f, 1.0f, 0.0f).next();
+                    //.normal(0.0f, 1.0f, 0.0f)
+                    .next();
         }
 
         // why the fuck do you need a normal when drawing a LINE?
@@ -144,8 +145,8 @@ public class OverlayRenderer implements WorldRenderEvents.End {
         RenderSystem.depthFunc(GL11.GL_ALWAYS);
 
         if (Pathcrafter.terrain != null && Pathcrafter.debugRenderToggle) {
-            //drawVertices(matrixStack);
-            //drawDebugText(context, matrixStack);
+            drawVertices(matrixStack);
+            drawDebugText(context, matrixStack);
         }
 
         drawLinesTest(matrixStack);

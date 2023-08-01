@@ -4,7 +4,6 @@ import org.jetbrains.annotations.NotNull;
 import stargazing.pathcrafter.Pathcrafter;
 import stargazing.pathcrafter.util.PlayerSpeed;
 
-import java.util.Comparator;
 import java.util.TreeSet;
 
 import static stargazing.pathcrafter.Constants.*;
@@ -30,6 +29,7 @@ public class SegmentList {
 
         public void updateVal(double newVal, TerrainGraph.Edge.EdgeAction newAction, Segment from) {
             if (val == -1 || newVal < val) {
+                //Pathcrafter.LOGGER.info(String.format("Updating value of segment %s to %f", this, newVal));
                 val = newVal;
                 action = newAction;
                 this.from = from;
@@ -42,17 +42,20 @@ public class SegmentList {
         }
     }
 
-    public final double dist;
+    public final double startDist;
+    public final double endDist;
     public final TreeSet<Segment> segments;
 
-    SegmentList(double dist) {
-        this.dist = dist;
+    SegmentList(double startDist, double endDist) {
+        this.startDist = startDist;
+        this.endDist = endDist;
         segments = new TreeSet<>();
     }
 
     SegmentList(@NotNull SegmentList copy) {
         segments = (TreeSet<Segment>) copy.segments.clone();
-        dist = copy.dist;
+        startDist = copy.startDist;
+        endDist = copy.endDist;
     }
 
     public void addSegment(Segment s) {
@@ -91,7 +94,7 @@ public class SegmentList {
         if (floor == null) {
             if (SEGMENT_LIST_DEBUG_INFO.enabled()) {
                 Pathcrafter.LOGGER.warn("Encountered null floor when looking for floor of " + y + "!");
-                Pathcrafter.LOGGER.warn("SegmentList at time " + dist);
+                Pathcrafter.LOGGER.warn("SegmentList at time " + startDist);
                 for (Segment s : segments) {
                     Pathcrafter.LOGGER.warn("> " + s);
                 }
@@ -101,9 +104,10 @@ public class SegmentList {
         return floor.end;
     }
 
-    public void mark(double minHeight, double maxHeight, double initialVal, double initialY, int curTick,
+    @Deprecated
+    public void old_mark(double minHeight, double maxHeight, double initialVal, double initialY, int curTick,
                      double nextSegDist, double maxSlack, double startingSegmentEndDist, Segment src) {
-        // Keeping it here for now. Up next, jump segment
+        // Don't use. Just keeping it here for reference, until the new mark() is working properly
         for (Segment s = segments.floor(new Segment(minHeight, minHeight));
              s != null && s.end <= maxHeight;
              s = segments.higher(s)) {
@@ -126,9 +130,44 @@ public class SegmentList {
         }
     }
 
+    /**
+     *
+     * @param posY The current Y position of the jump
+     * @param lastY The last Y position of the jump
+     * @param start The start of the jump's range
+     * @param end The end of the jump's range
+     * @param curVal The number of ticks to get to this point in the jump
+     * @param segEndDist The latest point at which the jump can be initiated
+     * @param source The source of the jump
+     * @return Whether the segment is intersected.
+     */
+    public boolean mark(double posY, double lastY, double start, double end,
+                        double curVal, double maxSlack, double segEndDist, Segment source) {
+        double minY = Math.min(posY, lastY), maxY = Math.max(posY, lastY);
+        Segment s = segments.floor(new Segment(maxY, maxY));
+        Pathcrafter.LOGGER.info(String.format("Potential jump collisions segment: %s", s));
+        // No intersection yet.
+        if (s == null) return false;
+        if (s.end < minY) return false;
+        if (s.end > maxY) return true;
+
+        // See which part intersects
+        // Start is currently not used :3
+        double newVal = curVal - Math.min(maxSlack, end - startDist) / SPRINT_SPEED;
+
+        // Update value
+        Pathcrafter.LOGGER.info(String.format("Updating value to %f (= %f - Math.min(%f, %f - %f) / %f)",
+                newVal, curVal, maxSlack, end, startDist, SPRINT_SPEED));
+        s.updateVal(newVal,
+                new TerrainGraph.Edge.EdgeAction(TerrainGraph.Edge.EdgeActionType.JUMP, source.end, segEndDist),
+                source);
+
+        return true;
+    }
+
     public void debug_print() {
         if (!SEGMENT_LIST_ALLOW_INFO_CALL.enabled()) return;
-        Pathcrafter.LOGGER.info("SegmentList at time " + dist);
+        Pathcrafter.LOGGER.info("SegmentList at time " + startDist + " to " + endDist);
         for (Segment s : segments) {
             Pathcrafter.LOGGER.info("> " + s);
         }
