@@ -17,7 +17,8 @@ optimal one.
 - This mod carries a heavy performance penalty over 
 alternatives. The mod is not aimed at botting. It is meant 
 to be a tool for general navigation without elytra or potentially
-for set seed speedrunners.
+for set seed speedrunners. With elytra, just fly up and glide in a
+straight line. Note that the glide ratio is approximately 1:10.
 
 The following are being implemented:
 
@@ -34,6 +35,7 @@ The following features have yet to be implemented:
   - Forward/Backward acceleration
 - Blipping (post jump, such as 1/2gt space presses making staircases faster)
 - Optimizations
+- Rename the mod to something fun :3
 - Clean up for v1.0.0 (Options menu, better commands, etc.)
 ---
 - Head hitting v2 (partial blocks)

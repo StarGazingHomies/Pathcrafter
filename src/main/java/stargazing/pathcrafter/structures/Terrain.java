@@ -16,6 +16,7 @@ import static stargazing.pathcrafter.config.DebugToggles.*;
 
 public class Terrain {
     public final int minX, minZ, maxX, maxZ;
+    public final double startX, startY, startZ, endX, endY, endZ;
     // Note that y ranges aren't important, we are processing all the blocks in these chunks anyway
 
     BlockColumn[][] columns;
@@ -41,9 +42,12 @@ public class Terrain {
         maxX = (int) Math.ceil(Math.max(startX, endX) + MAX_SEARCH_RANGE);
         maxZ = (int) Math.ceil(Math.max(startZ, endZ) + MAX_SEARCH_RANGE);
 
-        // Start and end vertices
-        graph.vertices.add(new Vertex(startX, startY, startZ, (int)startX, (int)startZ));
-        graph.vertices.add(new Vertex(endX, endY, endZ, (int)endX, (int)endZ));
+        this.startX = startX;
+        this.startY = startY;
+        this.startZ = startZ;
+        this.endX = endX;
+        this.endY = endY;
+        this.endZ = endZ;
 
         genColumns();
     }
@@ -102,6 +106,10 @@ public class Terrain {
      */
     public void findVertices() {
         long startTime = System.nanoTime();
+
+        // Start and end vertices
+        graph.vertices.add(new Vertex(startX, startY, startZ, (int)startX, (int)startZ));
+        graph.vertices.add(new Vertex(endX, endY, endZ, (int)endX, (int)endZ));
 
         for (int x = minX; x < maxX - 1; x++) {
             for (int z = minZ; z < maxZ - 1; z++) {

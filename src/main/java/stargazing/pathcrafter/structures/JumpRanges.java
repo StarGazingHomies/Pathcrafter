@@ -115,7 +115,7 @@ public class JumpRanges {
 
         // Front / back: modify endpoints
         // Feet: land, and modify endpoints
-        //System.out.printf("JumpRanges: Start: %f | End: %f\n", getStart(), getEnd());
+        // System.out.printf("JumpRanges: Start: %f | End: %f\n", getStart(), getEnd());
 
         // Filter out irrelevant segments
         if (start > getEnd() || end < getStart()) return;

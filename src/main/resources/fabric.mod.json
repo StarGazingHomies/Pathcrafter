@@ -3,12 +3,12 @@
   "id": "pathcrafter",
   "version": "0.0.2",
   "name": "pathcrafter",
-  "description": "Minecraft Pathfinding Tool",
+  "description": "Minecraft non-voxel-based pathfinding tool",
   "authors": [
     "StarGazingHomies"
   ],
   "contact": {
-    "repo": "https://github.com/StarGazingHomies/pathcrafter"
+    "homepage": "https://github.com/StarGazingHomies/pathcrafter"
   },
   "license": "All-Rights-Reserved",
   "icon": "assets/icon.png",
@@ -16,6 +16,9 @@
   "entrypoints": {
     "client": [
       "stargazing.pathcrafter.Pathcrafter"
+    ],
+    "modmenu": [
+      "stargazing.pathcrafter.ModMenuEntry"
     ]
   },
   "mixins": [
@@ -26,5 +29,10 @@
     "fabric": "*",
     "minecraft": "~1.19.4",
     "fabric-key-binding-api-v1": "*"
+  },
+  "custom": {
+    "modmenu": {
+      "update_checker": false
+    }
   }
 }

@@ -1,5 +1,6 @@
 package stargazing.pathcrafter.structures;
 
+import org.jetbrains.annotations.Nullable;
 import stargazing.pathcrafter.Constants;
 import stargazing.pathcrafter.Pathcrafter;
 
@@ -115,6 +116,13 @@ public class TerrainGraph {
         }
         Edge e = info.toEdge(to);
         edges.get(from).add(e);
+    }
+
+    public Edge getEdge(int from, int to) {
+        for (Edge e:edges.get(from)) {
+            if (e.to == to) return e;
+        }
+        return null;
     }
 
     public ArrayList<Terrain.PathAction> interpretEdge(int from, Edge e) {
