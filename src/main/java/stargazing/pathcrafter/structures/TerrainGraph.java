@@ -1,6 +1,5 @@
 package stargazing.pathcrafter.structures;
 
-import org.jetbrains.annotations.Nullable;
 import stargazing.pathcrafter.Constants;
 import stargazing.pathcrafter.Pathcrafter;
 
@@ -14,7 +13,7 @@ public class TerrainGraph {
     public static class Edge {
         public final int to;
         public final double weight;
-        public ArrayList<EdgeAction> actions;
+        //public ArrayList<EdgeAction> actions;
 
         public enum EdgeActionType {
             WALK,
@@ -23,36 +22,7 @@ public class TerrainGraph {
             END
         }
 
-        public static class EdgeAction {
-            // Describes one action in the edge
-            EdgeActionType action;
-            double y;
-            double dist;
-            EdgeAction(EdgeActionType edgeActionType, double y, double dist) {
-                this.action = edgeActionType;
-                this.y = y;
-                this.dist = dist;
-            }
-
-            public String toString() {
-                return String.format("%s at %f", action, dist);
-            }
-        }
-
-        public static class EdgeInfo {
-            public final double weight;
-            public ArrayList<EdgeAction> actions;
-
-            public EdgeInfo(double weight, ArrayList<EdgeAction> actions) {
-                this.weight = weight;
-                this.actions = actions;
-            }
-
-            public Edge toEdge(int to) {
-                return new Edge(to, weight, actions);
-            }
-        }
-        Edge(int t, double w, ArrayList<EdgeAction> a) {to = t; weight = w; actions = a;}
+        Edge(int t, double w) {to = t; weight = w;}
     }
 
     public ArrayList<Vertex> vertices = new ArrayList<>();
@@ -110,7 +80,7 @@ public class TerrainGraph {
         for (int i=0; i<vertices.size(); i++) edges.add(new ArrayList<>());
     }
 
-    public void addEdge(int from, int to, Edge.EdgeInfo info) {
+    public void addEdge(int from, int to, EdgeInfo info) {
         if (!initialized) {
             initEdgeList();
         }
@@ -125,11 +95,11 @@ public class TerrainGraph {
         return null;
     }
 
-    public ArrayList<Terrain.PathAction> interpretEdge(int from, Edge e) {
+    public ArrayList<Terrain.PathAction> interpretEdge(int from, int to, EdgeInfo e) {
         Vertex fromVertex = getVertex(from);
-        Vertex toVertex = getVertex(e.to);
+        Vertex toVertex = getVertex(to);
         ArrayList<Terrain.PathAction> r = new ArrayList<>();
-        for (Edge.EdgeAction action : e.actions) {
+        for (EdgeAction action : e.actions) {
             double[] coordinatesXZ = interpolate(fromVertex, toVertex, action.dist);
             Pathcrafter.LOGGER.info(String.format("Perform action %s at (%.2f, %.2f, %.2f)",
                     action.action, coordinatesXZ[0], action.y, coordinatesXZ[1]));
@@ -143,5 +113,43 @@ public class TerrainGraph {
         double totDist = flatEuclideanDist(v1,v2);
         double fraction = d / totDist;
         return new double[]{x1 + (x2 - x1) * fraction, z1 + (z2 - z1) * fraction};
+    }
+
+    public static class EdgeAction {
+        // Describes one action in the edge
+        final Edge.EdgeActionType action;
+        final double y;
+        final double dist;
+        final int jumpTicks;
+        EdgeAction(Edge.EdgeActionType edgeActionType, double y, double dist) {
+            this.action = edgeActionType;
+            this.y = y;
+            this.dist = dist;
+            this.jumpTicks = 0;
+        }
+        EdgeAction(Edge.EdgeActionType edgeActionType, double y, double dist, int jumpTicks) {
+            this.action = edgeActionType;
+            this.y = y;
+            this.dist = dist;
+            this.jumpTicks = jumpTicks;
+        }
+
+        public String toString() {
+            return String.format("%s at %f", action, dist);
+        }
+    }
+
+    public static class EdgeInfo {
+        public final double weight;
+        public final ArrayList<EdgeAction> actions;
+
+        public EdgeInfo(double weight, ArrayList<EdgeAction> actions) {
+            this.weight = weight;
+            this.actions = actions;
+        }
+
+        public Edge toEdge(int to) {
+            return new Edge(to, weight);
+        }
     }
 }

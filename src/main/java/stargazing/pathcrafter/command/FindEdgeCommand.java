@@ -23,7 +23,7 @@ public class FindEdgeCommand {
                 0 <= v2 && v2 < Pathcrafter.terrain.getGraph().vertices.size())) {
             throw new CommandException(Text.literal("Vertex index out of range!"));
         }
-        TerrainGraph.Edge.EdgeInfo result = Pathcrafter.terrain.findEdge(v1, v2);
+        TerrainGraph.EdgeInfo result = Pathcrafter.terrain.findEdge(v1, v2);
         context.getSource().sendFeedback(Text.literal(String.format("Operation completed with result %f", result.weight)));
         return Command.SINGLE_SUCCESS;
     }

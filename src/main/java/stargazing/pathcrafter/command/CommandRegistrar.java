@@ -24,6 +24,7 @@ public class CommandRegistrar {
                     ConfigCommand.register(pathcrafterNode);
                     GenTerrainCommand.register(pathcrafterNode);
                     GenVerticesCommand.register(pathcrafterNode);
+                    FindPathCommand.register(pathcrafterNode);
                 };
 
         ClientCommandRegistrationCallback.EVENT.register(c);

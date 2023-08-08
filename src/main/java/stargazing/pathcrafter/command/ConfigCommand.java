@@ -91,5 +91,6 @@ public class ConfigCommand {
         registerBoolean(configNode, DebugToggles.TERRAIN_COLUMNS_DEBUG_INFO, "TERRAIN_COLUMNS_DEBUG_INFO");
         registerBoolean(configNode, DebugToggles.SEGMENT_LIST_DEBUG_INFO, "SEGMENT_LIST_DEBUG_INFO");
         registerBoolean(configNode, DebugToggles.SEGMENT_LIST_ALLOW_INFO_CALL, "SEGMENT_LIST_ALLOW_INFO_CALL");
+        registerBoolean(configNode, DebugToggles.JUMP_RANGES_DEBUG_INFO, "JUMP_RANGES_DEBUG_INFO");
     }
 }

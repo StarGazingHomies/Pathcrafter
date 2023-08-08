@@ -20,10 +20,12 @@ to be a tool for general navigation without elytra or potentially
 for set seed speedrunners. With elytra, just fly up and glide in a
 straight line. Note that the glide ratio is approximately 1:10.
 
-The following are being implemented:
+
+
+Features:
 
 - Solid Blocks pathfinding
-- Jumping v1.0
+- Jumping v1.0 (No momentum handling, no strafing mid-air)
 
 The following features have yet to be implemented:
 
@@ -35,10 +37,10 @@ The following features have yet to be implemented:
   - Forward/Backward acceleration
 - Blipping (post jump, such as 1/2gt space presses making staircases faster)
 - Optimizations
-- Rename the mod to something fun :3
+- Rename the mod to something better :3
 - Clean up for v1.0.0 (Options menu, better commands, etc.)
 ---
-- Head hitting v2 (partial blocks)
+- Head hitting v2 (redirecting for hh for speed)
 - Ladders, Water & MLG option
 - Swimming
 - Extra stops

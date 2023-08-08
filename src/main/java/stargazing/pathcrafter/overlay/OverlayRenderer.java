@@ -47,7 +47,7 @@ public class OverlayRenderer implements WorldRenderEvents.End {
         tessellator.draw();
     }
 
-    public void drawLinesTest(MatrixStack matrixStack) {
+    public void drawPath(MatrixStack matrixStack) {
         // Prior to the function call:
         // Set up matrix stack with the relevant matrices (in this case, projection and view)
         // Possibly change OpenGL settings like culling / depth func
@@ -70,11 +70,18 @@ public class OverlayRenderer implements WorldRenderEvents.End {
         buffer.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
 
         for (Terrain.PathAction action : Pathcrafter.terrain.resultLines) {
-            buffer
-                    .vertex(positionMatrix, (float) action.x, (float) action.y, (float) action.z)
-                    .color(r,g,b,a)
-                    //.normal(0.0f, 1.0f, 0.0f)
-                    .next();
+            if (action.type == TerrainGraph.Edge.EdgeActionType.JUMP) {
+                buffer
+                        .vertex(positionMatrix, (float) action.x, (float) action.y, (float) action.z)
+                        .color(0.0f, 0.0f, 1.0f, 1.0f)
+                        .next();
+            }
+            else {
+                buffer
+                        .vertex(positionMatrix, (float) action.x, (float) action.y, (float) action.z)
+                        .color(r,g,b,a)
+                        .next();
+            }
         }
 
         // why the fuck do you need a normal when drawing a LINE?
@@ -149,7 +156,7 @@ public class OverlayRenderer implements WorldRenderEvents.End {
             drawDebugText(context, matrixStack);
         }
 
-        drawLinesTest(matrixStack);
+        drawPath(matrixStack);
 
         matrixStack.pop();
         RenderSystem.depthFunc(GL11.GL_LEQUAL);

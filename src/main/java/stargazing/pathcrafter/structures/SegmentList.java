@@ -2,12 +2,10 @@ package stargazing.pathcrafter.structures;
 
 import org.jetbrains.annotations.NotNull;
 import stargazing.pathcrafter.Pathcrafter;
-import stargazing.pathcrafter.util.PlayerSpeed;
 
 import java.util.TreeSet;
 
 import static stargazing.pathcrafter.Constants.*;
-import static stargazing.pathcrafter.util.PlayerSpeed.jumpTicksToFallTo;
 import static stargazing.pathcrafter.config.DebugToggles.SEGMENT_LIST_DEBUG_INFO;
 import static stargazing.pathcrafter.config.DebugToggles.SEGMENT_LIST_ALLOW_INFO_CALL;
 
@@ -15,7 +13,7 @@ public class SegmentList {
     public static class Segment implements Comparable<Segment> {
         public final double start, end;
         public double val;
-        public TerrainGraph.Edge.EdgeAction action;
+        public TerrainGraph.EdgeAction action;
         public Segment from;
         public Segment(double s, double e) {
             start = s;
@@ -27,7 +25,7 @@ public class SegmentList {
             return String.format("Segment(%f, %f) -> %f [LastAction: %s]", start, end, val, action);
         }
 
-        public void updateVal(double newVal, TerrainGraph.Edge.EdgeAction newAction, Segment from) {
+        public void updateVal(double newVal, TerrainGraph.EdgeAction newAction, Segment from) {
             if (val == -1 || newVal < val) {
                 //Pathcrafter.LOGGER.info(String.format("Updating value of segment %s to %f", this, newVal));
                 val = newVal;
@@ -104,32 +102,6 @@ public class SegmentList {
         return floor.end;
     }
 
-    @Deprecated
-    public void old_mark(double minHeight, double maxHeight, double initialVal, double initialY, int curTick,
-                     double nextSegDist, double maxSlack, double startingSegmentEndDist, Segment src) {
-        // Don't use. Just keeping it here for reference, until the new mark() is working properly
-        for (Segment s = segments.floor(new Segment(minHeight, minHeight));
-             s != null && s.end <= maxHeight;
-             s = segments.higher(s)) {
-
-            int landingTick = jumpTicksToFallTo(s.end - initialY);
-            double maxDist = PlayerSpeed.flatJumpDistances.get(landingTick).deltaX;
-            double slack = Math.max(Math.min(maxDist - nextSegDist, maxSlack), 0) / SPRINT_SPEED;
-
-            double newVal = initialVal + landingTick - slack;
-            s.updateVal(newVal, new TerrainGraph.Edge.EdgeAction(TerrainGraph.Edge.EdgeActionType.JUMP,
-                    initialY, startingSegmentEndDist - slack * SPRINT_SPEED), src);
-            if (SEGMENT_LIST_DEBUG_INFO.enabled()) {
-                Pathcrafter.LOGGER.info(String.format("Args | minH %f | maxH %f | initVal %f | initY %f | curTick %d | maxDeltaDist %f | maxSlack %f",
-                        minHeight, maxHeight, initialVal, initialY, curTick, nextSegDist, maxSlack));
-                Pathcrafter.LOGGER.info(String.format("Landing tick %d | maxSlackDist %f | slack %f",
-                        landingTick, nextSegDist - maxDist, slack));
-                Pathcrafter.LOGGER.info(String.format("Marking segment %s as value %f (%f + %d - %f)",
-                        s, newVal, initialVal, landingTick, slack));
-            }
-        }
-    }
-
     /**
      *
      * @param posY The current Y position of the jump
@@ -142,10 +114,11 @@ public class SegmentList {
      * @return Whether the segment is intersected.
      */
     public boolean mark(double posY, double lastY, double start, double end,
-                        double curVal, double maxSlack, double segEndDist, Segment source) {
+                        double curVal, double maxSlack, double segEndDist, Segment source, int jumpTick) {
         double minY = Math.min(posY, lastY), maxY = Math.max(posY, lastY);
         Segment s = segments.floor(new Segment(maxY, maxY));
-        Pathcrafter.LOGGER.info(String.format("Potential jump collisions segment: %s", s));
+        if (SEGMENT_LIST_DEBUG_INFO.enabled())
+            Pathcrafter.LOGGER.info(String.format("Potential jump collisions segment: %s", s));
         // No intersection yet.
         if (s == null) return false;
         if (s.end < minY) return false;
@@ -156,10 +129,11 @@ public class SegmentList {
         double newVal = curVal - Math.min(maxSlack, end - startDist) / SPRINT_SPEED;
 
         // Update value
-        Pathcrafter.LOGGER.info(String.format("Updating value to %f (= %f - Math.min(%f, %f - %f) / %f)",
-                newVal, curVal, maxSlack, end, startDist, SPRINT_SPEED));
+        if (SEGMENT_LIST_DEBUG_INFO.enabled())
+            Pathcrafter.LOGGER.info(String.format("Updating value to %f (= %f - Math.min(%f, %f - %f) / %f)",
+                    newVal, curVal, maxSlack, end, startDist, SPRINT_SPEED));
         s.updateVal(newVal,
-                new TerrainGraph.Edge.EdgeAction(TerrainGraph.Edge.EdgeActionType.JUMP, source.end, segEndDist),
+                new TerrainGraph.EdgeAction(TerrainGraph.Edge.EdgeActionType.JUMP, source.end, segEndDist, jumpTick),
                 source);
 
         return true;

@@ -38,5 +38,7 @@ public class DebugToggles {
     public static BooleanSetting SEGMENT_LIST_DEBUG_INFO =
             new BooleanSetting(false, "segment list debug info");
     public static BooleanSetting SEGMENT_LIST_ALLOW_INFO_CALL =
-            new BooleanSetting(false, "segment list info calls"); //
+            new BooleanSetting(false, "segment list info calls");
+    public static BooleanSetting JUMP_RANGES_DEBUG_INFO =
+            new BooleanSetting(false, "jump ranges debug info");
 }

@@ -11,8 +11,12 @@ import java.util.ArrayList;
 
 import static stargazing.pathcrafter.Constants.*;
 
-public class PlayerSpeed {
+// Go here to see player movement code
+// LivingEntity.tickMovement();
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 
+public class PlayerSpeed {
     public static class JumpData {
         public int ticksElapsed;
         public double minY, maxY, deltaX;
@@ -138,5 +142,6 @@ public class PlayerSpeed {
         for (JumpData jd:flatJumpDistances) {
             System.out.printf("Tick %d | Y: [%f, %f) | maxX: %f\n", jd.ticksElapsed, jd.minY, jd.maxY, jd.deltaX);
         }
+
     }
 }

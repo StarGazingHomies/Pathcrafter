@@ -19,14 +19,14 @@ public class Constants {
     public static final int TOT_HEIGHT = 384;
 
     // Player speed constants
-    public static final double SPRINT_SPEED = 5.612 / 20.0;
+    public static final double SPRINT_SPEED = 5.72 / 20.0;
     public static final double WALK_SPEED = 4.317 / 20.0;
     // Handy shortcut for flat ground sprint jumping
     public static final double SPRINT_JUMP_SPEED = 7.127 / 20.0;
 
     // It takes 12gt to land at the same y-level after jumping.
     public static final int FLAT_JUMP_TICKS = 12;
-    public static final int ELEVATE_JUMP_TICKS = 8;
+    public static final int ELEVATE_JUMP_TICKS = 9;
     public static final double FLAT_MAX_MOMENTUM = 0.3176;
 
     public static final double GRAVITY_MODIFIER = 0.08;
@@ -44,5 +44,6 @@ public class Constants {
     public static final int MAX_SEARCH_RANGE = 20;
     public static final double SEARCH_RANGE_FACTOR = 0.7;
     public static final int MAX_SEARCH_JUMP_TICK = 17;
+    public static final double MAX_EDGE_LENGTH = 10;
 
 }

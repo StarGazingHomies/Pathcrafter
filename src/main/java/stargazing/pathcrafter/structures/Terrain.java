@@ -7,7 +7,6 @@ import stargazing.pathcrafter.Pathcrafter;
 import stargazing.pathcrafter.util.Preprocessing;
 import stargazing.pathcrafter.util.World;
 
-import java.nio.file.Path;
 import java.util.*;
 
 import static stargazing.pathcrafter.Constants.*;
@@ -406,7 +405,7 @@ public class Terrain {
         return new Vertex(xCoord, y, zCoord, (int)x, (int)z);
     }
 
-    public TerrainGraph.Edge.EdgeInfo findEdge(int s, int e) {
+    public TerrainGraph.EdgeInfo findEdge(int s, int e) {
         return findEdge(graph.getVertex(s), graph.getVertex(e));
     }
 
@@ -456,10 +455,15 @@ public class Terrain {
         int success_noPath = 0;
         int exception = 0;
         int unloaded = 0;
+        int skipped_outOfRange = 0;
 
         for (int j=0; j<graph.vertices.size(); j++) {
             if (j == i) continue;
-            TerrainGraph.Edge.EdgeInfo edgeResult;
+            if (TerrainGraph.euclideanDist(graph.getVertex(i), graph.getVertex(j)) > MAX_EDGE_LENGTH) {
+                skipped_outOfRange++;
+                continue;
+            }
+            TerrainGraph.EdgeInfo edgeResult;
             try {
                 edgeResult = findEdge(s, graph.getVertex(j));
             }
@@ -476,14 +480,9 @@ public class Terrain {
             if (edgeResult.weight < 0) continue;
 
             // Debug
-            if (graph.getVertex(j).y > 15) {
-                // Strange occurence. has to debug
-                Pathcrafter.LOGGER.info(String.format("Edge from %d (%s) to %d (%s)-> %f",
-                        i, graph.getVertex(i), j, graph.getVertex(j), edgeResult));
-            }
             if (TERRAIN_EDGE_LIST_EDGES.enabled())
                 Pathcrafter.LOGGER.info(String.format("Edge from %d (%s) to %d (%s)-> %f",
-                        i, graph.getVertex(i), j, graph.getVertex(j), edgeResult));
+                        i, graph.getVertex(i), j, graph.getVertex(j), edgeResult.weight));
 
             graph.addEdge(i, j, edgeResult);
             success_hasPath++;
@@ -499,6 +498,9 @@ public class Terrain {
             Pathcrafter.LOGGER.info(
                     String.format("%d cross unloaded chunks, %d resulted in an exception", unloaded, exception)
             );
+            Pathcrafter.LOGGER.info(
+                    String.format("%d skipped due to being out of maximum range", skipped_outOfRange)
+            );
         }
     }
 
@@ -508,7 +510,7 @@ public class Terrain {
      * @param end Destination vertex
      * @return The edge travel time if path is available, otherwise -1.
      */
-    public TerrainGraph.Edge.EdgeInfo findEdge(Vertex start, Vertex end) {
+    public TerrainGraph.EdgeInfo findEdge(Vertex start, Vertex end) {
         // Convert this into 2d, and then... use dp?
         if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
             Pathcrafter.LOGGER.info(String.format("Finding path from %s to %s", start, end));
@@ -517,7 +519,7 @@ public class Terrain {
         if (start.equals(end)) {
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
                 Pathcrafter.LOGGER.info(String.format("%s and %s are the same vertex!", start, end));
-            return new TerrainGraph.Edge.EdgeInfo(-1, null);
+            return new TerrainGraph.EdgeInfo(-1, null);
         }
 
         // x and z directions
@@ -549,7 +551,7 @@ public class Terrain {
         if (centralColumns == null || upperColumns == null || lowerColumns == null) {
             // Congrats, you hit the edge of the loaded area!
             // The weights can't be calculated, so... have a negative number!
-            return new TerrainGraph.Edge.EdgeInfo(-2, null);
+            return new TerrainGraph.EdgeInfo(-2, null);
         }
         relevantColumns.addAll(centralColumns);
         relevantColumns.addAll(upperColumns);
@@ -655,14 +657,14 @@ public class Terrain {
 
         // Now do the weird ass dp
         if (startIndex == -1) {
-            return new TerrainGraph.Edge.EdgeInfo(-1, null);
+            return new TerrainGraph.EdgeInfo(-1, null);
         }
         SegmentList.Segment startingSegment = segments.get(startIndex).segments.floor(new SegmentList.Segment(start.y, start.y));
         double startingOffset = 0;
         if (startingSegment == null) {
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
                 Pathcrafter.LOGGER.warn("Null starting segment!");
-            return new TerrainGraph.Edge.EdgeInfo(-1, null);
+            return new TerrainGraph.EdgeInfo(-1, null);
         }
         // Starting segment can also have the same thing happen as end segment
         // If it's at the intersection of area of impact of 2 distinct sets of blocks, it can be ambiguous
@@ -672,7 +674,7 @@ public class Terrain {
             if (startIndex == -1 || Math.abs(segments.get(startIndex).startDist - dist) > EPSILON) {
                 if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
                     Pathcrafter.LOGGER.info("Invalid start segment! No path found.");
-                return new TerrainGraph.Edge.EdgeInfo(-1, null);
+                return new TerrainGraph.EdgeInfo(-1, null);
             }
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
                 Pathcrafter.LOGGER.info("Invalid start segment! Trying previous...");
@@ -686,13 +688,13 @@ public class Terrain {
 
             if (startingSegment == null || startingSegment.end != end.y) {
                 if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled()) Pathcrafter.LOGGER.info("Invalid start segment!");
-                return new TerrainGraph.Edge.EdgeInfo(-1, null);
+                return new TerrainGraph.EdgeInfo(-1, null);
             }
         }
 
         startingSegment.updateVal(
                 0,
-                new TerrainGraph.Edge.EdgeAction(TerrainGraph.Edge.EdgeActionType.BEGIN,startingSegment.end, 0),
+                new TerrainGraph.EdgeAction(TerrainGraph.Edge.EdgeActionType.BEGIN,startingSegment.end, 0),
                 null);
         if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
             Pathcrafter.LOGGER.info(String.format("Starting segment: %s", startingSegment));
@@ -717,7 +719,7 @@ public class Terrain {
             if (Math.abs(segments.get(segments.size() - 1).startDist - dist) > EPSILON) {
                 if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
                     Pathcrafter.LOGGER.info("Invalid end segment! No path found.");
-                return new TerrainGraph.Edge.EdgeInfo(-1, null);
+                return new TerrainGraph.EdgeInfo(-1, null);
             }
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
                 Pathcrafter.LOGGER.info("Invalid end segment! Trying previous...");
@@ -731,7 +733,7 @@ public class Terrain {
 
             if (endSegment == null || endSegment.end != end.y) {
                 if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled()) Pathcrafter.LOGGER.info("Invalid end segment!");
-                return new TerrainGraph.Edge.EdgeInfo(-1, null);
+                return new TerrainGraph.EdgeInfo(-1, null);
             }
         }
 
@@ -782,7 +784,7 @@ public class Terrain {
                     // time to edge + ticks to fall, if any
                     double sprintCost = curCost + ticksToFallTo(sprintingToSegment.end - s.end);
                     sprintingToSegment.updateVal(sprintCost,
-                            new TerrainGraph.Edge.EdgeAction(TerrainGraph.Edge.EdgeActionType.WALK,
+                            new TerrainGraph.EdgeAction(TerrainGraph.Edge.EdgeActionType.WALK,
                                     s.end, segmentStartDist), s);
                     if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
                         Pathcrafter.LOGGER.info("Sprinting to segment " + sprintingToSegment + " requires tick " + sprintCost);
@@ -800,6 +802,7 @@ public class Terrain {
                     jumpRanges.advanceTickY();
                     jumpRanges.advanceTickX();
                 }
+                // 6: start of fall; 18: 3 blocks deep, temporary to prevent fall dmg
                 for (int curTick=6; curTick<18; curTick++) {
 
                     jumpRanges.advanceTickY();
@@ -812,36 +815,41 @@ public class Terrain {
                         jumpRanges.debugLog();
                     }
                     for (SegmentList jumpCurSegment : segments) {
-                        if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
-                            jumpCurSegment.debug_print();
 
                         // Only if velY is >1.8m/tick will this "skipping" be incorrect.
                         if (!jumpCurSegment.contains(jumpRanges.posY)) {
-                            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
-                                Pathcrafter.LOGGER.info("Segment skipped since irrelevant");
+//                            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
+//                                Pathcrafter.LOGGER.info("Segment skipped since irrelevant");
                             continue;
                         }
 
                         // Advance to a relevant range
                         while (curRange != null && curRange.end < jumpCurSegment.startDist) {
                             curRange = jumpRanges.ranges.higher(curRange);
-                            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
-                                Pathcrafter.LOGGER.info("Advancing to next jump range");
+//                            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
+//                                Pathcrafter.LOGGER.info("Advancing to next jump range");
                         }
-                        while (curRange != null && curRange.start < jumpCurSegment.endDist) {
-                            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
-                                Pathcrafter.LOGGER.info(String.format("Processing range %s", curRange));
 
-                            jumpCurSegment.debug_print();
+//                        if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
+//                            jumpCurSegment.debug_print();
+
+                        while (curRange != null && curRange.start < jumpCurSegment.endDist) {
+                            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled()) {
+
+                                Pathcrafter.LOGGER.info(String.format("Intersecting jump range %s with segment [%f, %f]",
+                                        curRange, jumpCurSegment.startDist, jumpCurSegment.endDist));
+                            }
+
+//                            jumpCurSegment.debug_print();
                             boolean intersect = jumpCurSegment.mark(jumpRanges.posY, jumpRanges.lastY, curRange.start, curRange.end,
-                                    curCost + curTick, curSegment.endDist-curSegment.startDist, curSegment.endDist, s);
+                                    curCost + curTick, curSegment.endDist-curSegment.startDist, curSegment.endDist, s, curTick);
 
                             if (intersect) {
                                 jumpRanges.collide(jumpCurSegment.startDist, jumpCurSegment.endDist);
                                 if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled()) {
                                     Pathcrafter.LOGGER.info(String.format("Colliding with (%f, %f)",
                                             jumpCurSegment.startDist, jumpCurSegment.endDist));
-                                    jumpRanges.debugLog();
+//                                    jumpRanges.debugLog();
                                 }
                                 // If it does intersect, it's possible that the current range changed.
                                 // So as a result we don't advance
@@ -880,7 +888,7 @@ public class Terrain {
                 if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
                     Pathcrafter.LOGGER.info("No reachable segment found, terminating with no path.");
                 // If there's no reachable segment, then there won't be any further down the line.
-                return new TerrainGraph.Edge.EdgeInfo(-1, null);
+                return new TerrainGraph.EdgeInfo(-1, null);
             }
         }
 
@@ -890,7 +898,7 @@ public class Terrain {
                 Pathcrafter.LOGGER.info("Final result: -1 (Unreachable)");
                 Pathcrafter.LOGGER.info("----------------------------------------------------------------------");
             }
-            return new TerrainGraph.Edge.EdgeInfo(-1, null);
+            return new TerrainGraph.EdgeInfo(-1, null);
         }
 
         if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled()) {
@@ -900,7 +908,7 @@ public class Terrain {
         }
 
         // Build the edge
-        ArrayList<TerrainGraph.Edge.EdgeAction> actions = new ArrayList<>();
+        ArrayList<TerrainGraph.EdgeAction> actions = new ArrayList<>();
         SegmentList.Segment curSegment = endSegment;
         while (true) {
             actions.add(curSegment.action);
@@ -911,7 +919,7 @@ public class Terrain {
             curSegment = curSegment.from;
         }
 
-        return new TerrainGraph.Edge.EdgeInfo(endSegment.val + endOffset, actions);
+        return new TerrainGraph.EdgeInfo(endSegment.val + endOffset, actions);
     }
 
     /**
@@ -1012,7 +1020,6 @@ public class Terrain {
         double[] dist = new double[vertexCount];
         double[] bestDist = new double[vertexCount];
         int[] last = new int[vertexCount];
-        TerrainGraph.Edge[] lastEdge = new TerrainGraph.Edge[vertexCount];
         Arrays.fill(dist, Double.MAX_VALUE);
         Arrays.fill(bestDist, Double.MAX_VALUE);
         PriorityQueue<Integer> q = new PriorityQueue<>(Comparator.comparingDouble((Integer o) -> bestDist[o]));
@@ -1041,7 +1048,6 @@ public class Terrain {
                 if (result < dist[e.to]) {
                     dist[e.to] = result;
                     last[e.to] = front;
-                    lastEdge[e.to] = e;
                     bestDist[e.to] = result + graph.heuristic(e.to, 1);
                     q.add(e.to);
                 }
@@ -1055,7 +1061,9 @@ public class Terrain {
         int cur = 1;
         resultLines.add(new PathAction(graph.getVertex(1).x, graph.getVertex(1).y, graph.getVertex(1).z, TerrainGraph.Edge.EdgeActionType.END));
         while (cur != 0) {
-            ArrayList<PathAction> edgePositions = graph.interpretEdge(last[cur], lastEdge[cur]);
+            // Generate the edge information, because it's not saved
+            TerrainGraph.EdgeInfo edgePath = findEdge(last[cur], cur);
+            ArrayList<PathAction> edgePositions = graph.interpretEdge(last[cur], cur, edgePath);
             resultLines.addAll(edgePositions);
             cur = last[cur];
             Pathcrafter.LOGGER.info("From: " + graph.getVertex(cur) + "(" + cur + ")");
