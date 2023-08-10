@@ -25,7 +25,7 @@ public class TerrainGraph {
         Edge(int t, double w) {to = t; weight = w;}
     }
 
-    public ArrayList<Vertex> vertices = new ArrayList<>();
+    public ArrayList<TerrainGraphVertex> vertices = new ArrayList<>();
     public ArrayList<ArrayList<Edge>> edges = new ArrayList<>();
 
     boolean initialized = false;
@@ -38,7 +38,7 @@ public class TerrainGraph {
      * @param v2 Vertex 2
      * @return Euclidean distance between v1 and v2
      */
-    static double euclideanDist(Vertex v1, Vertex v2) {
+    static double euclideanDist(TerrainGraphVertex v1, TerrainGraphVertex v2) {
         return Math.pow((v1.x - v2.x) * (v1.x - v2.x) +
                 (v1.y - v2.y) * (v1.y - v2.y) +
                 (v1.z - v2.z) * (v1.z - v2.z) , 0.5);
@@ -50,7 +50,7 @@ public class TerrainGraph {
      * @param v2 Vertex 2
      * @return Euclidean distance between v1 and v2 on the xz plane.
      */
-    static double flatEuclideanDist(Vertex v1, Vertex v2) {
+    static double flatEuclideanDist(TerrainGraphVertex v1, TerrainGraphVertex v2) {
         return Math.pow((v1.x - v2.x) * (v1.x - v2.x) +
                 (v1.z - v2.z) * (v1.z - v2.z) , 0.5);
     }
@@ -61,9 +61,9 @@ public class TerrainGraph {
      * @param dest Destination
      * @return A double representing the estimated amount of ticks required
      */
-    public double heuristic(Vertex v, Vertex dest) {
+    public double heuristic(TerrainGraphVertex v, TerrainGraphVertex dest) {
         // Sprint jumping distance
-        double xz_result = flatEuclideanDist(v, dest) / Constants.SPRINT_JUMP_SPEED;
+        double xz_result = flatEuclideanDist(v, dest) / Constants.HEURISTIC_SPEED;
         // Minimum amount of blocks needed to jump up. Very crude estimation.
         // Note that this heuristic isn't at all accurate when partial blocks or blipping are involved.
         double y_result = v.y < dest.y ? (dest.y - v.y) * ELEVATE_JUMP_TICKS : 0;
@@ -74,7 +74,7 @@ public class TerrainGraph {
         return heuristic(getVertex(v), getVertex(dest));
     }
 
-    public Vertex getVertex(int i) {return vertices.get(i);}
+    public TerrainGraphVertex getVertex(int i) {return vertices.get(i);}
 
     public void initEdgeList() {
         for (int i=0; i<vertices.size(); i++) edges.add(new ArrayList<>());
@@ -96,8 +96,8 @@ public class TerrainGraph {
     }
 
     public ArrayList<Terrain.PathAction> interpretEdge(int from, int to, EdgeInfo e) {
-        Vertex fromVertex = getVertex(from);
-        Vertex toVertex = getVertex(to);
+        TerrainGraphVertex fromVertex = getVertex(from);
+        TerrainGraphVertex toVertex = getVertex(to);
         ArrayList<Terrain.PathAction> r = new ArrayList<>();
         for (EdgeAction action : e.actions) {
             double[] coordinatesXZ = interpolate(fromVertex, toVertex, action.dist);
@@ -108,7 +108,7 @@ public class TerrainGraph {
         return r;
     }
 
-    public double[] interpolate(Vertex v1, Vertex v2, double d) {
+    public double[] interpolate(TerrainGraphVertex v1, TerrainGraphVertex v2, double d) {
         double x1 = v1.x, z1 = v1.z, x2 = v2.x, z2 = v2.z;
         double totDist = flatEuclideanDist(v1,v2);
         double fraction = d / totDist;

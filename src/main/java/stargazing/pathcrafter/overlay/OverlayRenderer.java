@@ -8,14 +8,17 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.Vec3d;
 import org.joml.*;
 import org.lwjgl.opengl.GL11;
 import stargazing.pathcrafter.Pathcrafter;
 import stargazing.pathcrafter.structures.Terrain;
 import stargazing.pathcrafter.structures.TerrainGraph;
-import stargazing.pathcrafter.structures.Vertex;
+import stargazing.pathcrafter.structures.TerrainGraphVertex;
 
 import java.lang.Math;
+
+import static stargazing.pathcrafter.Constants.VERTEX_INFO_RANGE;
 
 
 public class OverlayRenderer implements WorldRenderEvents.End {
@@ -38,7 +41,7 @@ public class OverlayRenderer implements WorldRenderEvents.End {
 
         buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
-        for (Vertex v : Pathcrafter.terrain.getGraph().vertices) {
+        for (TerrainGraphVertex v : Pathcrafter.terrain.getGraph().vertices) {
             buffer.vertex(positionMatrix, (float) v.x-offSet, (float) v.y, (float) v.z+offSet).color(r, g, b, a).next();
             buffer.vertex(positionMatrix, (float) v.x-offSet, (float) v.y, (float) v.z-offSet).color(r, g, b, a).next();
             buffer.vertex(positionMatrix, (float) v.x+offSet, (float) v.y, (float) v.z-offSet).color(r, g, b, a).next();
@@ -98,6 +101,8 @@ public class OverlayRenderer implements WorldRenderEvents.End {
         // if not generated, skip
 
         MinecraftClient player = MinecraftClient.getInstance();
+        assert player.player != null;
+        Vec3d playerPos = player.player.getPos();
 
         matrixStack.push();
         float scale = 0.015f;
@@ -106,7 +111,8 @@ public class OverlayRenderer implements WorldRenderEvents.End {
 
         if (Pathcrafter.terrain.getGraph().edges.size() != 0)
             for (TerrainGraph.Edge e : Pathcrafter.terrain.getGraph().edges.get(0)) {
-                Vertex v = Pathcrafter.terrain.getGraph().getVertex(e.to);
+                TerrainGraphVertex v = Pathcrafter.terrain.getGraph().getVertex(e.to);
+                if (playerPos.distanceTo(new Vec3d(v.x, v.y, v.z)) > VERTEX_INFO_RANGE) continue;
                 matrixStack.push();
                 Vector3d textPos = new Vector3d(v.x, v.y, v.z);
                 matrixStack.translate(textPos.x, textPos.y + yOffset, textPos.z);
@@ -118,8 +124,8 @@ public class OverlayRenderer implements WorldRenderEvents.End {
             }
 
         for (int i=0; i<Pathcrafter.terrain.getGraph().vertices.size(); i++) {
-            Vertex v = Pathcrafter.terrain.getGraph().vertices.get(i);
-            if (!(0.0 <= v.x && v.x <= 16.00 && 0.0 <= v.z && v.z <= 16.0)) continue;
+            TerrainGraphVertex v = Pathcrafter.terrain.getGraph().vertices.get(i);
+            if (playerPos.distanceTo(new Vec3d(v.x, v.y, v.z)) > VERTEX_INFO_RANGE) continue;
             matrixStack.push();
             Vector3d textPos = new Vector3d(v.x, v.y, v.z);
             matrixStack.translate(textPos.x, textPos.y + yOffset, textPos.z);

@@ -10,27 +10,63 @@ import static stargazing.pathcrafter.config.DebugToggles.SEGMENT_LIST_DEBUG_INFO
 import static stargazing.pathcrafter.config.DebugToggles.SEGMENT_LIST_ALLOW_INFO_CALL;
 
 public class SegmentList {
-    public static class Segment implements Comparable<Segment> {
-        public final double start, end;
+    public class Segment implements Comparable<Segment> {
+        public final double start, end; // These are vertical.
         public double val;
+        public double jumpStart, jumpEnd; // These are horizontal. I should come up with better names.
+        public double jumpMomentum;
         public TerrainGraph.EdgeAction action;
         public Segment from;
         public Segment(double s, double e) {
             start = s;
             end = e;
             val = -1;
+            jumpStart = startDist;
+            jumpEnd = endDist;
+            jumpMomentum = 0;
         }
 
         public String toString() {
-            return String.format("Segment(%f, %f) -> %f [LastAction: %s]", start, end, val, action);
+            return String.format("Segment(%f, %f) -> %f (landing [%f, %f] | m: %f) [LastAction: %s]",
+                    start, end, val, jumpStart, jumpEnd, jumpMomentum, action);
         }
 
+        /**
+         * Updates the value for a segment, used for starting segment & walking. No jump information.
+         * @param newVal The new time it takes to get to the segment
+         * @param newAction The last action to get to the segment
+         * @param from The origin of the action
+         */
         public void updateVal(double newVal, TerrainGraph.EdgeAction newAction, Segment from) {
             if (val == -1 || newVal < val) {
                 //Pathcrafter.LOGGER.info(String.format("Updating value of segment %s to %f", this, newVal));
                 val = newVal;
                 action = newAction;
                 this.from = from;
+                this.jumpStart = startDist;
+                this.jumpEnd = endDist;
+                this.jumpMomentum = 0;
+            }
+        }
+
+        /**
+         * Updates the value for a segment, used for starting segment & walking. Has jump information.
+         * @param newVal The new time it takes to get to the segment
+         * @param newAction The last action to get to the segment
+         * @param from The origin of the action
+         * @param jumpStart The start of the area possible to land from a jump
+         * @param jumpEnd The end of the area possible to land from a jump
+         * @param jumpMomentum The momentum at the end of a jump
+         */
+        public void updateVal(double newVal, TerrainGraph.EdgeAction newAction, Segment from, double jumpStart, double jumpEnd, double jumpMomentum) {
+            if (val == -1 || newVal < val) {
+                //Pathcrafter.LOGGER.info(String.format("Updating value of segment %s to %f", this, newVal));
+                val = newVal;
+                action = newAction;
+                this.from = from;
+                this.jumpStart = jumpStart;
+                this.jumpEnd = jumpEnd;
+                this.jumpMomentum = jumpMomentum;
             }
         }
 
@@ -41,8 +77,8 @@ public class SegmentList {
     }
 
     public final double startDist;
-    public final double endDist;
-    public final TreeSet<Segment> segments;
+    public final double endDist; // These are horizontal.
+    public final TreeSet<Segment> segments; // This is vertical.
 
     SegmentList(double startDist, double endDist) {
         this.startDist = startDist;
@@ -51,7 +87,7 @@ public class SegmentList {
     }
 
     SegmentList(@NotNull SegmentList copy) {
-        segments = (TreeSet<Segment>) copy.segments.clone();
+        segments = (TreeSet<Segment>) copy.segments.clone(); // What else am I supposed to do here, IntelliJ?
         startDist = copy.startDist;
         endDist = copy.endDist;
     }
@@ -87,33 +123,21 @@ public class SegmentList {
         return floor == null || y <= floor.end;
     }
 
-    public double floor(double y) {
-        Segment floor = segments.floor(new Segment(y, y));
-        if (floor == null) {
-            if (SEGMENT_LIST_DEBUG_INFO.enabled()) {
-                Pathcrafter.LOGGER.warn("Encountered null floor when looking for floor of " + y + "!");
-                Pathcrafter.LOGGER.warn("SegmentList at time " + startDist);
-                for (Segment s : segments) {
-                    Pathcrafter.LOGGER.warn("> " + s);
-                }
-            }
-            return MIN_HEIGHT;
-        }
-        return floor.end;
+    public Segment floor(double y) {
+        return segments.floor(new Segment(y, y));
     }
 
     /**
      *
      * @param posY The current Y position of the jump
      * @param lastY The last Y position of the jump
-     * @param start The start of the jump's range
-     * @param end The end of the jump's range
+     * @param curRange The current jump range to intersect
      * @param curVal The number of ticks to get to this point in the jump
      * @param segEndDist The latest point at which the jump can be initiated
      * @param source The source of the jump
      * @return Whether the segment is intersected.
      */
-    public boolean mark(double posY, double lastY, double start, double end,
+    public boolean mark(double posY, double lastY, JumpRanges.JumpRange curRange,
                         double curVal, double maxSlack, double segEndDist, Segment source, int jumpTick) {
         double minY = Math.min(posY, lastY), maxY = Math.max(posY, lastY);
         Segment s = segments.floor(new Segment(maxY, maxY));
@@ -123,6 +147,13 @@ public class SegmentList {
         if (s == null) return false;
         if (s.end < minY) return false;
         if (s.end > maxY) return true;
+
+        double[] nextTick = curRange.peekNextTick();
+        double start = nextTick[0];
+        double end = nextTick[1];
+        // Very rudimentary momentum handling - just saving it alongside.
+        // Not correct, but close enough.
+        double velEnd = nextTick[3];
 
         // See which part intersects
         // Start is currently not used :3
@@ -134,7 +165,10 @@ public class SegmentList {
                     newVal, curVal, maxSlack, end, startDist, SPRINT_SPEED));
         s.updateVal(newVal,
                 new TerrainGraph.EdgeAction(TerrainGraph.Edge.EdgeActionType.JUMP, source.end, segEndDist, jumpTick),
-                source);
+                source,
+                Math.max(start, this.startDist),
+                Math.min(end, this.endDist),
+                velEnd);
 
         return true;
     }

@@ -64,6 +64,31 @@ public class JumpRanges {
             tick++;
         }
 
+        /**
+         * Peeks the positions for the next tick without actually advancing data
+         * @return A list of 4 elements containing {start, end, velStart, velEnd} for the next tick in this order
+         */
+        public double[] peekNextTick() {
+            double _velStart, _velEnd;
+            if (tick == 0) {
+                _velStart = velStart * HORIZONTAL_DRAG +
+                        HORIZONTAL_ACCELERATION_GROUND * SPRINT_FACTOR * STRAIGHT_FACTOR +
+                        SPRINT_JUMP_MODIFIER;
+                _velEnd = velEnd * HORIZONTAL_DRAG +
+                        HORIZONTAL_ACCELERATION_GROUND * SPRINT_FACTOR * STRAIGHT_FACTOR +
+                        SPRINT_JUMP_MODIFIER;
+            }
+            else if  (tick == 1) {
+                _velStart = velStart * HORIZONTAL_DRAG * HORIZONTAL_DRAG_GROUND_MULTIPLIER + HORIZONTAL_ACCELERATION_AIR * SPRINT_FACTOR;
+                _velEnd = velEnd * HORIZONTAL_DRAG * HORIZONTAL_DRAG_GROUND_MULTIPLIER + HORIZONTAL_ACCELERATION_AIR * SPRINT_FACTOR;
+            } else {
+                 _velStart = velStart * HORIZONTAL_DRAG + HORIZONTAL_ACCELERATION_AIR * SPRINT_FACTOR;
+                _velEnd = velEnd * HORIZONTAL_DRAG + HORIZONTAL_ACCELERATION_AIR * SPRINT_FACTOR;
+            }
+            return new double[]{start+_velStart, end+_velEnd, _velStart, _velEnd};
+        }
+
+
         public int remove(double s, double e) {
             if (s <= start && end <= e) return -1; // Completely contain (# of ranges -= 1)
             if (e <= start || end <= s) return 0;  // Irrelevant (# of ranges stay the same)

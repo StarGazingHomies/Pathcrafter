@@ -33,6 +33,7 @@ public class FindEdgesCommand {
 
         ArgumentCommandNode<FabricClientCommandSource, Integer> findEdgesVertex = ClientCommandManager
                 .argument("vertex", IntegerArgumentType.integer())
+                .executes(FindEdgesCommand::findEdges)
                 .build();
         findEdgesNode.addChild(findEdgesVertex);
         pathcrafterNode.addChild(findEdgesNode);

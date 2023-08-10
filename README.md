@@ -11,16 +11,22 @@ vertices and edges are heavily modified.
 By doing so, movement can occur at any angle and will
 heavily reduce the travel time of the planned path.
 
+## Usage
+
+Use /pathcrafter findPath startX startY startZ endX endY endZ
+to generate a path.
+
 Note:
-- The mod tries to find a "good" solution, **not necessarily** _the most_
-optimal one.
+- The mod tries to find a "good" solution, **not necessarily the most**
+optimal one. There are also many things not taken into account.
 - This mod carries a heavy performance penalty over 
 alternatives. The mod is not aimed at botting. It is meant 
 to be a tool for general navigation without elytra or potentially
 for set seed speedrunners. With elytra, just fly up and glide in a
 straight line. Note that the glide ratio is approximately 1:10.
-
-
+- Currently, there are a lot of memory issues. Running the algorithm
+in a large open area **will very likely** cause Minecraft to run out of 
+memory. You have been warned.
 
 Features:
 

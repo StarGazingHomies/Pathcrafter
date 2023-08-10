@@ -107,8 +107,8 @@ public class Terrain {
         long startTime = System.nanoTime();
 
         // Start and end vertices
-        graph.vertices.add(new Vertex(startX, startY, startZ, (int)startX, (int)startZ));
-        graph.vertices.add(new Vertex(endX, endY, endZ, (int)endX, (int)endZ));
+        graph.vertices.add(new TerrainGraphVertex(startX, startY, startZ, (int)startX, (int)startZ));
+        graph.vertices.add(new TerrainGraphVertex(endX, endY, endZ, (int)endX, (int)endZ));
 
         for (int x = minX; x < maxX - 1; x++) {
             for (int z = minZ; z < maxZ - 1; z++) {
@@ -393,7 +393,7 @@ public class Terrain {
      * @return A new vertex object
      */
     @Contract("_, _, _, _ -> new")
-    public static @NotNull Vertex createVertex(double x, double y, double z, int type) {
+    public static @NotNull TerrainGraphVertex createVertex(double x, double y, double z, int type) {
         // Useable even with non-full block vertices, because the player-width offset is important
         // Although the columnX and columnZ args may change if there's hitboxes that extend past the block
         // 0 1
@@ -402,7 +402,7 @@ public class Terrain {
         // v +x
         double xCoord = x + 1 + ((type & 2) > 0 ? 1 : -1) * PLAYER_HALF_WIDTH;
         double zCoord = z + 1 + ((type & 1) > 0 ? 1 : -1) * PLAYER_HALF_WIDTH;
-        return new Vertex(xCoord, y, zCoord, (int)x, (int)z);
+        return new TerrainGraphVertex(xCoord, y, zCoord, (int)x, (int)z);
     }
 
     public TerrainGraph.EdgeInfo findEdge(int s, int e) {
@@ -448,7 +448,7 @@ public class Terrain {
 
     public void findAllEdgesFrom(int i) {
         long startTime = System.nanoTime();
-        Vertex s = graph.getVertex(i);
+        TerrainGraphVertex s = graph.getVertex(i);
 
         // Debug counters
         int success_hasPath = 0;
@@ -510,7 +510,7 @@ public class Terrain {
      * @param end Destination vertex
      * @return The edge travel time if path is available, otherwise -1.
      */
-    public TerrainGraph.EdgeInfo findEdge(Vertex start, Vertex end) {
+    public TerrainGraph.EdgeInfo findEdge(TerrainGraphVertex start, TerrainGraphVertex end) {
         // Convert this into 2d, and then... use dp?
         if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
             Pathcrafter.LOGGER.info(String.format("Finding path from %s to %s", start, end));
@@ -659,7 +659,7 @@ public class Terrain {
         if (startIndex == -1) {
             return new TerrainGraph.EdgeInfo(-1, null);
         }
-        SegmentList.Segment startingSegment = segments.get(startIndex).segments.floor(new SegmentList.Segment(start.y, start.y));
+        SegmentList.Segment startingSegment = segments.get(startIndex).floor(start.y);
         double startingOffset = 0;
         if (startingSegment == null) {
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
@@ -679,7 +679,7 @@ public class Terrain {
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
                 Pathcrafter.LOGGER.info("Invalid start segment! Trying previous...");
 
-            startingSegment = segments.get(startIndex).segments.floor(new SegmentList.Segment(start.y, start.y));
+            startingSegment = segments.get(startIndex).floor(start.y);
             startingOffset = (dist - segments.get(startIndex).startDist) / SPRINT_SPEED;
 
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
@@ -692,6 +692,8 @@ public class Terrain {
             }
         }
 
+        // Assume we are not sprinting after a turn, for now.
+        // so no momentum
         startingSegment.updateVal(
                 0,
                 new TerrainGraph.EdgeAction(TerrainGraph.Edge.EdgeActionType.BEGIN,startingSegment.end, 0),
@@ -701,17 +703,11 @@ public class Terrain {
 
         // The end segment
         SegmentList.Segment endSegment =
-                segments.get(segments.size() - 1).segments.floor(new SegmentList.Segment(start.y, start.y));
+                segments.get(segments.size() - 1).floor(end.y);
         double endOffset = (dist - segments.get(segments.size() - 1).startDist) / SPRINT_SPEED;
 
         if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
             Pathcrafter.LOGGER.info(String.format("Potential End Segment: %s", endSegment));
-
-//        if (endSegment == null) {
-//            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
-//                Pathcrafter.LOGGER.warn("Null end segment!");
-//            return new TerrainGraph.Edge.EdgeInfo(-1, null);
-//        }
 
         if (endSegment == null || endSegment.end != end.y) {
             // The end segment can be ambiguous if it's exactly at the endpoint.
@@ -724,7 +720,7 @@ public class Terrain {
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
                 Pathcrafter.LOGGER.info("Invalid end segment! Trying previous...");
 
-            endSegment = segments.get(segments.size() - 2).segments.floor(new SegmentList.Segment(start.y, start.y));
+            endSegment = segments.get(segments.size() - 2).floor(end.y);
             endOffset = (dist - segments.get(segments.size() - 2).startDist) / SPRINT_SPEED;
 
             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
@@ -775,7 +771,7 @@ public class Terrain {
 
                 // Try sprinting forwards
                 SegmentList nextSegment = segments.get(i+1);
-                SegmentList.Segment sprintingToSegment = nextSegment.segments.floor(new SegmentList.Segment(s.end, s.end));
+                SegmentList.Segment sprintingToSegment = nextSegment.floor(s.end);
                 // Current time + time it takes to sprint to the edge of the block
                 double curCost = s.val + thisSegmentTime;
                 // If there is somewhere to sprint to
@@ -792,9 +788,11 @@ public class Terrain {
 
                 // Try jumping forwards
                 // Jumping v1 - take-off segment, iterate over ticks
-                // at the start, segmentStartDist ~ segmentEndDist is available.
+                // Jumping v1.0.1 - fixed last tick of X movement
+                // Jumping v1.0.2 - landing position & momentum
 
-                // v1.1 will calculate wrt accelerating.
+                // v1.1.0 will have more correct backward accelerating.
+                // [later version] will feature cross-vertex jumping
 
                 // Jumping v1
                 JumpRanges jumpRanges = new JumpRanges(segmentStartDist, segmentEndDist, s.end);
@@ -826,12 +824,7 @@ public class Terrain {
                         // Advance to a relevant range
                         while (curRange != null && curRange.end < jumpCurSegment.startDist) {
                             curRange = jumpRanges.ranges.higher(curRange);
-//                            if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
-//                                Pathcrafter.LOGGER.info("Advancing to next jump range");
                         }
-
-//                        if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled())
-//                            jumpCurSegment.debug_print();
 
                         while (curRange != null && curRange.start < jumpCurSegment.endDist) {
                             if (TERRAIN_INDIVIDUAL_EDGE_DEBUG_INFO.enabled()) {
@@ -841,7 +834,7 @@ public class Terrain {
                             }
 
 //                            jumpCurSegment.debug_print();
-                            boolean intersect = jumpCurSegment.mark(jumpRanges.posY, jumpRanges.lastY, curRange.start, curRange.end,
+                            boolean intersect = jumpCurSegment.mark(jumpRanges.posY, jumpRanges.lastY, curRange,
                                     curCost + curTick, curSegment.endDist-curSegment.startDist, curSegment.endDist, s, curTick);
 
                             if (intersect) {
@@ -1037,10 +1030,11 @@ public class Terrain {
                 break;
             }
 
-            if (!genEdges[front]) {
-                findAllEdgesFrom(front);
-                genEdges[front] = true;
-            }
+            findAllEdgesFrom(front);
+//            if (!genEdges[front]) {
+//                findAllEdgesFrom(front);
+//                genEdges[front] = true;
+//            }
 
             for (TerrainGraph.Edge e : graph.edges.get(front)) {
                 double result = dist[front] + e.weight;
@@ -1052,6 +1046,7 @@ public class Terrain {
                     q.add(e.to);
                 }
             }
+            graph.edges.get(front).clear();
         }
 
         // No path

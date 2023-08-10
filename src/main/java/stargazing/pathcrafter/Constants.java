@@ -21,7 +21,7 @@ public class Constants {
     // Player speed constants
     public static final double SPRINT_SPEED = 5.72 / 20.0;
     public static final double WALK_SPEED = 4.317 / 20.0;
-    // Handy shortcut for flat ground sprint jumping
+    // Handy shortcut for flat ground sprint jumping, if I ever use it
     public static final double SPRINT_JUMP_SPEED = 7.127 / 20.0;
 
     // It takes 12gt to land at the same y-level after jumping.
@@ -39,11 +39,15 @@ public class Constants {
 
     // Other movement
     public static final double BLIP_UP_MAX_DISTANCE = 0.6;
+    // Debug overlay options
+    public static final double VERTEX_INFO_RANGE = 20.0;
 
-    // Options, will implement something later
+    // Pathfinding options
     public static final int MAX_SEARCH_RANGE = 20;
     public static final double SEARCH_RANGE_FACTOR = 0.7;
     public static final int MAX_SEARCH_JUMP_TICK = 17;
     public static final double MAX_EDGE_LENGTH = 10;
+    // A speed to use for heuristic. Might make it an option / make it dynamic based on terrain complexity.
+    public static final double HEURISTIC_SPEED = 6.6 / 20.0;
 
 }
