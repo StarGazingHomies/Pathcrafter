@@ -1,5 +1,7 @@
 # Pathcrafter
 
+![Demonstration of a path involving multiple jumps](https://github.com/StarGazingHomies/Pathcrafter/blob/readme-image/image.png?raw=true)
+
 Minecraft non-voxel-based pathfinding mod.
 
 Unlike Baritone, Maple, Stevebot or any other voxel-based mods, 
